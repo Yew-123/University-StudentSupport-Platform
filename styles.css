@@ -703,25 +703,32 @@ transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease;
     margin-top: 16px;
 }
 
-.volunteer-card{
+.volunteer-card {
     border: 1px solid #e2e8f0;
     padding: 16px;
     border-radius: 8px;
     margin-bottom: 16px;
     background: #fff;
+    
 }
 
-.volunteer-card button{
-    display: grid;
-    padding: 12px;
-    background-color: var(--dashboard-primary);
-    color: var(--dashboard-header-text);
-    margin: 12px;
+.volunteer-card button {
+    display: inline-flex !important; 
     justify-content: center;
+    align-items: center;
+    
+    width: 30% !important;
+    padding: 12px !important; 
+    margin: 12px;
     border-radius: 12px;
+    
+    background-color: var(--dashboard-primary) !important; 
+    color: var(--dashboard-header-text);
     text-decoration: none;
+    border: none; 
     transition: 0.3s ease;
 }
+
 .volunteer-card button:hover{
     background-color: var(--dashboard-hover-text);
     box-shadow: var(--dashboard-shadow);
