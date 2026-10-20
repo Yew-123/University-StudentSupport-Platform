@@ -33,7 +33,7 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
     
     // Ensure ALL THREE fields are selected before showing results
     if (empty($selectedSkill) || empty($selectedAvailability) || empty($selectedSupportMode)) {
-        $volunteersHTML = '<p style="text-align: center; color: #e53e3e;">Please fill out all fields (Skill, Availability, and Support Mode) before applying filters.</p>';
+        $volunteersHTML = '<p style="text-align: center; color: #e53e3e; padding: top 12px;">Please fill out all fields (Skill, Availability, and Support Mode) before applying filters.</p>';
     } else {
         $sql = "SELECT DISTINCT s.studentID, s.Name, s.Email, s.phoneNo, s.Availability, s.supportMode 
                 FROM student s 
