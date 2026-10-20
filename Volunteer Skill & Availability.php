@@ -73,7 +73,7 @@ $allSkillsResult =$conn->query($allSkillsQuery);$skillCheckboxesHTML = '';
 if ($allSkillsResult->num_rows > 0) {
     while ($skill =$allSkillsResult->fetch_assoc()) {
         $isChecked = in_array($skill['skillID'], $userSkills) ? 'checked' : '';$skillCheckboxesHTML .= '
-            <div style="margin-bottom: 8px;">
+            <div class="checkboxlist">
                 <input type="checkbox" id="skill_' . $skill['skillID'] . '" name="skills[]" value="' . htmlspecialchars($skill['skillID']) . '" ' . $isChecked . '>
                 <label for="skill_' . $skill['skillID'] . '">' . htmlspecialchars($skill['skillName']) . '</label>
             </div>';
