@@ -9,7 +9,6 @@
 </head>
 <body>
     <main class="support_status" id="tables-container">
-        <!-- Back Button Added Here -->
          <header>
             <button type="button" onclick="window.location.href='Student Dashboard.php'" class="backbutton">
                 <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
@@ -37,6 +36,7 @@
                     if (data.length === 0) {
                         const noDataMsg = document.createElement("div");
                         noDataMsg.style.textAlign = "center";
+                        noDataMsg.style.marginTop = "20px";
                         noDataMsg.innerHTML = `No support requests found (${escapeHtml(statusFilter)}).`;
                         container.appendChild(noDataMsg);
                         return;
@@ -46,11 +46,24 @@
                         const table = document.createElement("table");
                         table.className = "support_status_table";
                         
+                        // Handle Volunteer Display: If volunteerName exists, show it. Otherwise show "Choose Volunteer" action link.
+                        let volunteerDisplay = '';
+                        if (request.volunteerName && request.volunteerName.trim() !== '') {
+                            volunteerDisplay = escapeHtml(request.volunteerName);
+                        } else {
+                            volunteerDisplay = `
+                                <span style="color: #e53e3e; display: block; margin-bottom: 5px;">No volunteer chosen</span>
+                                <a href="Find Volunteer.php?requestID=${encodeURIComponent(request.requestID)}&skill=${encodeURIComponent(request.preferredSkills)}" 
+                                   style="background: #28a745; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 13px; display: inline-block;">
+                                   Choose Volunteer
+                                </a>`;
+                        }
+
                         table.innerHTML = `
                             <tbody>
                                 <tr>
                                     <th>Selected Volunteer</th>
-                                    <td>${escapeHtml(request.volunteerName)}</td>
+                                    <td>${volunteerDisplay}</td>
                                 </tr>
                                 <tr>
                                     <th>Preferred Skills</th>
