@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <title>Find Volunteer</title>
+</head>
+<body>
+    <main class="find_volunteer">
+        <form class="find_volunteer_form" method="GET" action="">
+            <h1>Find Volunteer</h1>
+            
+            <label for="skill">Skills</label>
+            <div class="select-wrapper">
+                <select name="skill" id="skill">
+                    {{skillOptions}}
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
+
+            <label for="availability">Availability</label>
+            <div class="select-wrapper">
+                <select name="availability" id="availability">
+                    <option value="" {{availabilityDefaultSelected}}>--Select Availability--</option>
+                    <option value="weekdays" {{availabilityWeekdays}}>Weekdays</option>
+                    <option value="weekends" {{availabilityWeekends}}>Weekends</option>
+                    <option value="flexible" {{availabilityFlexible}}>Flexible</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
+
+            <label>Support Mode</label>
+            <div class="support-mode">
+                <input type="radio" id="online" name="support_mode" value="Online" {{onlineChecked}}>
+                <label for="online">Online</label>
+                
+                <input type="radio" id="in-person" name="support_mode" value="In-person" {{inPersonChecked}}>
+                <label for="in-person">In-person</label>
+                
+                <input type="radio" id="both" name="support_mode" value="Both" {{bothChecked}}>
+                <label for="both">Both</label>
+            </div>
+
+            <button type="submit">Apply Filters</button>
+
+            <p>Matching Volunteers</p>
+            
+            {{volunteersHTML}}
+        </form>
+    </main>
+
+    <!-- Modal 1: Volunteer Profile View with Skills and Select Button -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('profileModal')">&times;</span>
+            <h2>Volunteer Profile</h2>
+            <div id="profileDetails"></div>
+            <br>
+            <div style="display: flex; justify-content: space-between;">
+                <button type="button" onclick="closeModal('profileModal')">Back</button>
+                <button type="button" onclick="selectFromModal()">Select Volunteer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Success Message -->
+    <div id="successModal" class="modal">
+        <div class="modal-content" style="text-align: center;">
+            <h2>Request Success!</h2>
+            <p>Your volunteer request has been successfully submitted.</p>
+            <br>
+            <button type="button" onclick="window.location.href='Request Details (Student).php'">Back to Dashboard</button>
+        </div>
+    </div>
+
+    <script>
+        function viewVolunteer(name, email, phone, availability, supportMode, skills) {
+            document.getElementById('profileDetails').innerHTML = `
+                <h3><strong></strong> ${name}</h3>
+                <p><strong>Phone Number:</strong><br>${phone}</p>
+                <p><strong>Email:</strong><br>${email}</p>
+                <p><strong>Skills:</strong> ${skills || 'None listed'}</p>
+                <p><strong>Availability:</strong><br>${availability}</p>
+                <p><strong>Support Mode:</strong><br>${supportMode}</p>
+            `;
+            document.getElementById('profileModal').style.display = 'flex';
+        }
+
+        function selectVolunteer(studentID) {
+            document.getElementById('successModal').style.display = 'flex';
+        }
+
+        function selectFromModal() {
+            closeModal('profileModal');
+            document.getElementById('successModal').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+    </script>
+</body>
+</html>

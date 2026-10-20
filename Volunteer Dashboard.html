@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <title>Volunteer Dashboard</title>
+</head>
+<body class="dashboardBackground">
+    <main class="studentDashboard">
+        <header>University Student Support Platform</header>
+        <section>
+        <nav id="sidenav" class="sidenav">
+            <a href="#"><i class="fa-solid fa-clipboard-list"></i>View Support Support Requests</a>
+            <a href="Volunteer Skill & Availability.php"><i class="fa-solid fa-sliders"></i>Manage Skills & Availability</a>
+            <a href="#"><i class="fa-solid fa-calendar-days"></i>Schedule Session</a>
+            <a href="Volunteer Support Status.html"><i class="fa-solid fa-chart-line"></i>View Current Support Status</a>
+            <a href="#"><i class="fa-solid fa-clock-rotate-left"></i>View Support Session History</a>
+            <a href="logout.php" class="logout"><i class="fa-solid fa-right-from-bracket"></i>Log Out</a>
+        </nav>
+        <article>
+            <h2>Welcome, {{studentName}}</h2>
+            <div class="pendingAndacceptedRequests">
+            <div class="statCard pendingCard">
+                <div class="statCardHeader">
+                    <div class="statIcon">
+                        <i class="fa-regular fa-clock"></i>
+                    </div>
+                    <p>Pending Requests</p>
+                </div>
+
+                <h3>{{pendingCount}}</h3>
+                <span>Awaiting response</span>
+            </div>
+
+            <div class="statCard acceptedCard">
+                <div class="statCardHeader">
+                    <div class="statIcon">
+                        <i class="fa-regular fa-calendar-check"></i>
+                    </div>
+                    <p>Accepted Sessions</p>
+                </div>
+
+                <h3>{{acceptedCount}}</h3>
+                <span>Successfully accepted</span>
+            </div>
+        </div>
+            <h2>Recent Support Sessions</h2>
+            <a href="Support Request.php" class="newSupportRequest">Submit New Support Request</a>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Skill</th>
+                        <th>Description</th>
+                        <th>Mode</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{requestRows}}
+                </tbody>
+            </table>
+        </article>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <title>Volunteer Skill & Availability</title>
+</head>
+<body>
+    <main class="edit_profile">
+        <form class="edit_profile_form" method="POST" action="">
+            <h1>Volunteer Skill & Availability</h1>
+
+            {{messageBlock}}
+
+            <!-- Availability Selection -->
+            <label for="availability">Availability</label>
+            <div class="select-wrapper">
+                <select name="availability" id="availability" required>
+                    <option value="" disabled {{availabilityDefaultSelected}}>--Select Availability--</option>
+                    <option value="weekdays" {{availabilityWeekdays}}>Weekdays</option>
+                    <option value="weekends" {{availabilityWeekends}}>Weekends</option>
+                    <option value="flexible" {{availabilityFlexible}}>Flexible</option>
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
+
+            <!-- Support Mode Selection -->
+            <label>Support Mode</label>
+            <div class="support-mode" style="margin-bottom: 20px;">
+                <input type="radio" id="online" name="support_mode" value="Online" {{onlineChecked}} required>
+                <label for="online">Online</label>
+                
+                <input type="radio" id="in-person" name="support_mode" value="In-person" {{inPersonChecked}}>
+                <label for="in-person">In-person</label>
+                
+                <input type="radio" id="both" name="support_mode" value="Both" {{bothChecked}}>
+                <label for="both">Both</label>
+            </div>
+
+            <!-- Skills Checkboxes -->
+            <label>Skills Possessed</label>
+            <div class="skills-checkbox-group" style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #fafafa;">
+                {{skillCheckboxes}}
+            </div>
+
+            <button type="submit" class="submit-btn">Save Changes</button>
+            <br><br>
+            <button type="button" onclick="window.location.href='Volunteer Dashboard.php';" style="background: #718096; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">Back to Dashboard</button>
+        </form>
+    </main>
+</body>
+</html>
