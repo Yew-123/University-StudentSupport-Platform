@@ -142,7 +142,7 @@ $htmlTemplate = str_replace('{{inPersonChecked}}', $inPersonChecked, $htmlTempla
 $htmlTemplate = str_replace('{{bothChecked}}', $bothChecked, $htmlTemplate);
 $htmlTemplate = str_replace('{{volunteersHTML}}', $volunteersHTML, $htmlTemplate);
 
-// If your HTML form needs to preserve requestID, inject it into the form or output a hidden input if needed
+
 if (!empty($targetRequestID)) {
     $htmlTemplate = str_replace('</form>', '<input type="hidden" name="requestID" value="' . htmlspecialchars($targetRequestID, ENT_QUOTES) . '"></form>', $htmlTemplate);
 }
