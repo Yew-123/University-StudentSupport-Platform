@@ -11,29 +11,15 @@ if (!isset($_SESSION['studentID'])) {
     exit;
 }
 
-// 1. Fetch skill names and IDs from the SKILLS table
-$skillsQuery = "SELECT skillID, skillName FROM skills ORDER BY skillName ASC";
+// 1. Fetch skill names from the SKILLS table for the dropdown selection
+$skillsQuery = "SELECT DISTINCT skillName FROM skills ORDER BY skillName ASC";
 $skillsResult = $conn->query($skillsQuery);
-
 $skillOptionsHTML = '<option value="">--Select Skill--</option>';
-$selectedSkillID = $_GET['skill'] ?? '';
-$selectedSkill = '';
+$selectedSkill = $_GET['skill'] ?? '';
 
 while ($skill = $skillsResult->fetch_assoc()) {
-    $skillID = (string)$skill['skillID'];
-    $skillName = $skill['skillName'];
-
-    if ($selectedSkillID === $skillID) {
-        $selectedSkill = $skillName;
-    }
-
-    $isSel = ($selectedSkillID === $skillID) ? 'selected' : '';
-
-    $skillOptionsHTML .= '<option value="' .
-        htmlspecialchars($skillName, ENT_QUOTES, 'UTF-8') .
-        '" ' . $isSel . '>' .
-        htmlspecialchars($skillName, ENT_QUOTES, 'UTF-8') .
-        '</option>';
+    $isSel = ($selectedSkill == $skill['skillName']) ? 'selected' : '';
+    $skillOptionsHTML .= '<option value="' . htmlspecialchars($skill['skillName']) . '" ' . $isSel . '>' . htmlspecialchars($skill['skillName']) . '</option>';
 }
 
 // 2. Capture filter parameters
