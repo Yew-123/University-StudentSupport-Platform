@@ -33,7 +33,7 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
     
     // Ensure ALL THREE fields are selected before showing results
     if (empty($selectedSkill) || empty($selectedAvailability) || empty($selectedSupportMode)) {
-        $volunteersHTML = '<p style="text-align: center; color: #e53e3e;">Please fill out all filter fields (Skill, Availability, and Support Mode) before applying filters.</p>';
+        $volunteersHTML = '<p style="text-align: center; color: #e53e3e;">Please fill out all fields (Skill, Availability, and Support Mode) before applying filters.</p>';
     } else {
         $sql = "SELECT DISTINCT s.studentID, s.Name, s.Email, s.phoneNo, s.Availability, s.supportMode 
                 FROM student s 
@@ -95,7 +95,7 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
         $stmt->close();
     }
 } else {
-    $volunteersHTML = '<p style="text-align: center; color: #718096;">Please fill out all filters and click "Apply Filters" to find volunteers.</p>';
+    $volunteersHTML = '<p style="text-align: center; color: #718096;">Please fill out all fields and click "Apply Filters" to find volunteers.</p>';
 }
 
 // 5. Handle Form Template Variables State
