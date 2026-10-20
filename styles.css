@@ -1198,13 +1198,35 @@ option:hover {
 }
 
 .edit_profile_form .checkboxlist input[type="checkbox"] {
-    border-radius: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     width: 18px;
     height: 18px;
+    border: 2px solid #cbd5e0; 
+    border-radius: 6px;   
+    background-color: #fff;
     cursor: pointer;
-    accent-color: var(--dashboard-hover-text); 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
+/* Style for when the checkbox is checked */
+.edit_profile_form .checkboxlist input[type="checkbox"]:checked {
+    background-color: var(--dashboard-hover-text, #3182ce);
+    border-color: var(--dashboard-hover-text, #3182ce);
+}
+
+/* Optional: Add a small checkmark tick when checked */
+.edit_profile_form .checkboxlist input[type="checkbox"]:checked::after {
+    content: "✓";
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
 .edit_profile_form .checkboxlist label {
     font-size: 14px;
     color: #2d3748;
