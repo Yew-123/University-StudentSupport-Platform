@@ -27,7 +27,8 @@ if (!isset($conn) || $conn->connect_error) {
 $sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, sr.preferred_at, s.skillName AS preferredSkills 
         FROM supportrequest sr
         LEFT JOIN skills s ON sr.skillID = s.skillID
-        WHERE sr.studentID = ? AND sr.requestStatus = ?";
+        WHERE sr.studentID = ? AND sr.requestStatus = ?
+        ORDER BY sr.created_at DESC";
 
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
