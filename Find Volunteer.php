@@ -90,7 +90,7 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
             }
             $volunteersHTML .= '</div>';
         } else {
-            $volunteersHTML = '<p style="text-align: center; color: #718096;">No matching volunteers found.</p>';
+            $volunteersHTML = '<p style="text-align: center; color: #718096; padding-top: 12px">No matching volunteers found.</p>';
         }
         $stmt->close();
     }
