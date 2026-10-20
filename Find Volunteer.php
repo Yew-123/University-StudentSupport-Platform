@@ -95,7 +95,7 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
         $stmt->close();
     }
 } else {
-    $volunteersHTML = '<p style="text-align: center; color: #718096;">Please fill out all fields and click "Apply Filters" to find volunteers.</p>';
+    $volunteersHTML = '<p style="text-align: center; color: #718096; padding-top: 12px">Please fill out all fields and click "Apply Filters" to find volunteers.</p>';
 }
 
 // 5. Handle Form Template Variables State
