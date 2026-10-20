@@ -11,7 +11,28 @@ if (!isset($_SESSION['studentID'])) {
     exit;
 }
 
-// 1. Fetch skill names from the SKILLS table for the dropdown selection
+// 1. HANDLE DIRECT ASSIGNMENT (If 'assignID' and 'requestID' are passed)
+if (isset($_GET['assignID']) && isset($_GET['requestID'])) {
+    $volunteerID = $_GET['assignID'];
+    $requestID = $_GET['requestID'];
+
+    // Use COALESCE so it doesn't break if requestDesc is empty/null
+    $updateStmt = $conn->prepare("UPDATE SUPPORTREQUEST SET requestDesc = CONCAT(COALESCE(requestDesc, ''), ' | AssignedVolunteer: ', ?) WHERE requestID = ?");
+    if ($updateStmt) {
+        $updateStmt->bind_param("ss", $volunteerID, $requestID);
+        $updateStmt->execute();
+        $updateStmt->close();
+    }
+
+    // Redirect to Support Status page after successful assignment
+    header("Location: Student Support Status.html?status=Pending");
+    exit;
+}
+
+// 2. Capture target requestID if passed from previous pages
+$targetRequestID = $_GET['requestID'] ?? '';
+
+// 3. Fetch skill names from the SKILLS table for the dropdown selection
 $skillsQuery = "SELECT DISTINCT skillName FROM skills ORDER BY skillName ASC";
 $skillsResult = $conn->query($skillsQuery);
 $skillOptionsHTML = '<option value="">--Select Skill--</option>';
@@ -22,16 +43,15 @@ while ($skill = $skillsResult->fetch_assoc()) {
     $skillOptionsHTML .= '<option value="' . htmlspecialchars($skill['skillName']) . '" ' . $isSel . '>' . htmlspecialchars($skill['skillName']) . '</option>';
 }
 
-// 2. Capture filter parameters
+// 4. Capture filter parameters
 $selectedAvailability = $_GET['availability'] ?? '';
 $selectedSupportMode = $_GET['support_mode'] ?? '';
 
 $volunteersHTML = '';
 
-// 3. Check if the "Apply Filters" button was clicked (checking the URL trigger)
+// 5. Check if the "Apply Filters" button was clicked
 if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['support_mode'])) {
     
-    // Ensure ALL THREE fields are selected before showing results
     if (empty($selectedSkill) || empty($selectedAvailability) || empty($selectedSupportMode)) {
         $volunteersHTML = '<p style="text-align: center; color: #e53e3e; padding-top: 12px;">Please fill out all fields (Skill, Availability, and Support Mode) before applying filters.</p>';
     } else {
@@ -50,13 +70,11 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
         $stmt->execute();
         $result = $stmt->get_result();
 
-        // 4. Generate Volunteers HTML Cards with separate View and Select buttons
         if ($result->num_rows > 0) {
             $volunteersHTML .= '<div class="volunteer-list">';
             while ($vol = $result->fetch_assoc()) {
                 $vID = $vol['studentID'];
 
-                // Fetch skills possessed by this specific volunteer
                 $volSkillsStmt = $conn->prepare("SELECT sk.skillName FROM VOLUNTEERSKILL vs JOIN SKILLS sk ON vs.skillID = sk.skillID WHERE vs.studentID = ?");
                 $volSkillsStmt->bind_param("s", $vID);
                 $volSkillsStmt->execute();
@@ -76,15 +94,20 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
                 $vMode = htmlspecialchars($vol['supportMode'], ENT_QUOTES);
                 $vSkills = htmlspecialchars($skillsString, ENT_QUOTES);
 
+                // Ensure targetRequestID is carried over when clicking select
+                $selectAction = !empty($targetRequestID) 
+                    ? "window.location.href='Find Volunteer.php?assignID=" . $vID . "&requestID=" . urlencode($targetRequestID) . "'"
+                    : "selectVolunteer('" . $vID . "')";
+
                 $volunteersHTML .= '
                     <div class="volunteer-card">
                         <h3>' . $vName . '</h3>
-                        <p><strong>Skill:</strong>' . $vSkills . '</p> 
+                        <p><strong>Skill:</strong> ' . $vSkills . '</p> 
                         <p><strong>Availability:</strong> ' . $vAvail . '</p>
                         <div style="margin-top: 12px;">
                             <button type="button" 
                             onclick="viewVolunteer(\'' . $vName . '\', \'' . $vEmail . '\', \'' . $vPhone . '\', \'' . $vAvail . '\', \'' . $vMode . '\', \'' . $vSkills . '\')" >View</button>
-                            <button type="button" onclick="selectVolunteer(\'' . $vID . '\')">Select</button>
+                            <button type="button" onclick="' . $selectAction . '">Select</button>
                         </div>
                     </div>';
             }
@@ -98,7 +121,6 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
     $volunteersHTML = '<p style="text-align: center; color: #718096; padding-top: 12px">Please fill out all fields and click "Apply Filters" to find volunteers.</p>';
 }
 
-// 5. Handle Form Template Variables State
 $availabilityDefaultSelected = empty($selectedAvailability) ? 'selected' : '';
 $availabilityWeekdays = ($selectedAvailability === 'weekdays') ? 'selected' : '';
 $availabilityWeekends = ($selectedAvailability === 'weekends') ? 'selected' : '';
@@ -108,7 +130,6 @@ $onlineChecked = ($selectedSupportMode === 'Online') ? 'checked' : '';
 $inPersonChecked = ($selectedSupportMode === 'In-person') ? 'checked' : '';
 $bothChecked = ($selectedSupportMode === 'Both') ? 'checked' : '';
 
-// 6. Load and render the HTML template
 $htmlTemplate = file_get_contents('Find Volunteer.html');
 
 $htmlTemplate = str_replace('{{skillOptions}}', $skillOptionsHTML, $htmlTemplate);
@@ -120,6 +141,11 @@ $htmlTemplate = str_replace('{{onlineChecked}}', $onlineChecked, $htmlTemplate);
 $htmlTemplate = str_replace('{{inPersonChecked}}', $inPersonChecked, $htmlTemplate);
 $htmlTemplate = str_replace('{{bothChecked}}', $bothChecked, $htmlTemplate);
 $htmlTemplate = str_replace('{{volunteersHTML}}', $volunteersHTML, $htmlTemplate);
+
+// If your HTML form needs to preserve requestID, inject it into the form or output a hidden input if needed
+if (!empty($targetRequestID)) {
+    $htmlTemplate = str_replace('</form>', '<input type="hidden" name="requestID" value="' . htmlspecialchars($targetRequestID, ENT_QUOTES) . '"></form>', $htmlTemplate);
+}
 
 echo $htmlTemplate;
 $conn->close();
