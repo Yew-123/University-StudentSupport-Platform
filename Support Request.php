@@ -26,20 +26,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $createdAt = date('Y-m-d H:i:s');
 
     if (!empty($skillID) && !empty($prefDate) && !empty($prefTime)) {
+        // Insert support request (leave volunteerID NULL initially)
         $stmt = $conn->prepare("INSERT INTO SUPPORTREQUEST (requestID, studentID, skillID, requestDesc, requestStatus, supportMode, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
         
         if ($stmt) {
             $stmt->bind_param("ssissss", $requestID, $id, $skillID, $requestDesc, $requestStatus, $supportMode, $createdAt);
             
             if ($stmt->execute()) {
+                $stmt->close();
+                // Fetch the corresponding skillName for this skillID so Find Volunteer can read it
+                $skillNameQuery = $conn->prepare("SELECT skillName FROM SKILLS WHERE skillID = ?");
+                $skillNameQuery->bind_param("i", $skillID);
+                $skillNameQuery->execute();
+                $skillNameRes = $skillNameQuery->get_result();
+                $skillNameRow = $skillNameRes->fetch_assoc();
+                $skillNameQuery->close();
+
+                $selectedSkillName = $skillNameRow['skillName'] ?? '';
+
                 $showPopup = 'show'; // Triggers popup CSS class in template
-                // Dynamically pass the skill ID to the Find Volunteer page
-                $findVolunteerLink = 'Find Volunteer.php?skill=' . urlencode($skillID);
+                
+                // Pass BOTH the skill name and requestID to the Find Volunteer page
+                $findVolunteerLink = 'Find Volunteer.php?skill=' . urlencode($selectedSkillName) . '&requestID=' . urlencode($requestID);
             } else {
                 echo "Database Insert Error: " . htmlspecialchars($stmt->error);
                 exit;
             }
-            $stmt->close();
         } else {
             echo "Prepare Error: " . htmlspecialchars($conn->error);
             exit;
