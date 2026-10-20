@@ -1,5 +1,5 @@
 <?php
-// Turn off raw HTML error rendering so it doesn't break our JSON interface
+// Turn off raw HTML error display so errors don't corrupt JSON output
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -8,69 +8,72 @@ require_once 'db.php';
 
 header('Content-Type: application/json');
 
-// 1. Authenticate session credentials
-if (!isset($_SESSION['studentID']) || $_SESSION['role'] !== 'student') {
+if (!isset($_SESSION['studentID'])) {
     http_response_code(401);
-    die(json_encode(['error' => 'Unauthorized access']));
+    echo json_encode(['error' => 'Unauthorized access']);
+    exit;
 }
 
 $studentID = $_SESSION['studentID'];
 $status = $_GET['status'] ?? 'Pending'; 
 
-// 2. Safely verify that the database connection object ($conn) exists
 if (!isset($conn) || $conn->connect_error) {
     http_response_code(500);
-    die(json_encode(['error' => 'Database connection failed: ' . ($conn->connect_error ?? 'Connection variable missing')]));
+    echo json_encode(['error' => 'Database connection failed']);
+    exit;
 }
 
-// 3. Query execution via prepared statement with a JOIN to the skills table
-$sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, sr.preferred_at, s.skillName AS preferredSkills 
-        FROM supportrequest sr
-        LEFT JOIN skills s ON sr.skillID = s.skillID
+$sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, 
+               s.skillName AS preferredSkills 
+        FROM SUPPORTREQUEST sr
+        LEFT JOIN SKILLS s ON sr.skillID = s.skillID
         WHERE sr.studentID = ? AND sr.requestStatus = ?
         ORDER BY sr.created_at DESC";
 
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
     http_response_code(500);
-    die(json_encode(['error' => 'SQL preparation failed: ' . $conn->error]));
+    echo json_encode(['error' => 'SQL preparation failed: ' . $conn->error]);
+    exit;
 }
 
 $stmt->bind_param("ss", $studentID, $status); 
 $stmt->execute();
 $result = $stmt->get_result();
 
-if (!$result) {
-    http_response_code(500);
-    die(json_encode(['error' => 'Failed to fetch query execution results: ' . $conn->error]));
-}
+$rows = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
-$rows = $result->fetch_all(MYSQLI_ASSOC);
-
-// Process rows to format Date, Time, and Volunteer placeholder for the frontend
 foreach ($rows as &$row) {
-    // Split preferred_at into date and time
-    if (!empty($row['preferred_at'])) {
-        $dt = new DateTime($row['preferred_at']);
-        $row['preferredDate'] = $dt->format('Y-m-d');
-        $row['preferredTime'] = $dt->format('H:i');
-    } else {
-        $row['preferredDate'] = 'Not Specified';
-        $row['preferredTime'] = 'Not Specified';
+    $row['preferredDate'] = !empty($row['created_at']) ? date('Y-m-d', strtotime($row['created_at'])) : 'Not Specified';
+    $row['preferredTime'] = !empty($row['created_at']) ? date('H:i', strtotime($row['created_at'])) : 'Not Specified';
+    $row['preferredSkills'] = $row['preferredSkills'] ?? 'Not Specified';
+
+    $volunteerName = '';
+    
+    // Check if requestDesc has our assigned volunteer tag
+    if (!empty($row['requestDesc']) && strpos($row['requestDesc'], 'AssignedVolunteer:') !== false) {
+        $parts = explode('AssignedVolunteer:', $row['requestDesc']);
+        if (isset($parts[1])) {
+            $assignedVolID = trim(explode('|', $parts[1])[0]); 
+
+            $volQuery = $conn->prepare("SELECT Name FROM STUDENT WHERE studentID = ?");
+            if ($volQuery) {
+                $volQuery->bind_param("s", $assignedVolID);
+                $volQuery->execute();
+                $volRes = $volQuery->get_result();
+                if ($volRow = $volRes->fetch_assoc()) {
+                    $volunteerName = $volRow['Name'] ?? '';
+                }
+                $volQuery->close();
+            }
+        }
     }
 
-    // Fallback if no matching skill name is found
-    if (empty($row['preferredSkills'])) {
-        $row['preferredSkills'] = 'Not Specified';
-    }
-
-    // Placeholder for volunteer since it isn't stored in supportrequest yet
-    $row['selectedVolunteer'] = 'Not Assigned Yet'; 
+    $row['volunteerName'] = $volunteerName;
 }
 
-// 4. Render array conversion directly 
 echo json_encode($rows);
 
-$stmt->close();
-$conn->close();
+if ($stmt) $stmt->close();
+if (isset($conn)) $conn->close();
 ?>
