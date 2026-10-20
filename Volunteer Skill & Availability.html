@@ -28,7 +28,7 @@
 
             <!-- Support Mode Selection -->
             <label>Support Mode</label>
-            <div class="support-mode" style="margin-bottom: 20px;">
+            <div class="support-mode">
                 <input type="radio" id="online" name="support_mode" value="Online" {{onlineChecked}} required>
                 <label for="online">Online</label>
                 
@@ -41,13 +41,12 @@
 
             <!-- Skills Checkboxes -->
             <label>Skills Possessed</label>
-            <div class="skills-checkbox-group" style="border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #fafafa;">
+            <div class="skills-checkbox-group">
                 {{skillCheckboxes}}
             </div>
 
             <button type="submit" class="submit-btn">Save Changes</button>
-            <br><br>
-            <button type="button" onclick="window.location.href='Volunteer Dashboard.php';" style="background: #718096; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">Back to Dashboard</button>
+            <button type="button" onclick="window.location.href='Volunteer Dashboard.php';">Back to Dashboard</button>
         </form>
     </main>
 </body>
