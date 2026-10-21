@@ -1057,6 +1057,20 @@ option:hover {
     font-size: 0.95rem;
 }
 
+.support_status_table td .schedulelink{
+    background: var(--dashboard-primary); 
+    color: white; 
+    padding: 6px 12px; 
+    border-radius: 6px; 
+    text-decoration: none; 
+    font-size: 12px; 
+    display: inline-block; 
+}
+
+.support_status_table td .schedulelink i{
+    margin-right: 6px;
+}
+
 /* Generic dynamic badge wrapper styling template */
 .status-badge {
     display: inline-flex;
