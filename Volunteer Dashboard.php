@@ -10,21 +10,27 @@ if (!isset($_SESSION['studentID'])) {
 
 $id = $_SESSION['studentID'];
 $volunteerName = $_SESSION['name'] ?? 'Volunteer';
+$searchTerm = '%' . $id . '%';
 
-// 1. Fetch Request Counts (Count sessions assigned/accepted by this volunteer)
+// 1. Fetch Request Counts accurately for Pending and Accepted
+$pendingCount = 0;
 $acceptedCount = 0;
-$searchTerm = '%AssignedVolunteer: ' . $id . '%';
 
-if ($stmt = $conn->prepare("SELECT COUNT(*) AS a FROM SUPPORTREQUEST WHERE requestDesc LIKE ?")) {
+if ($stmt = $conn->prepare("SELECT COUNT(*) AS p FROM SUPPORTREQUEST WHERE requestDesc LIKE ? AND requestStatus = 'Pending'")) {
+    $stmt->bind_param("s", $searchTerm);
+    $stmt->execute();
+    $counts = $stmt->get_result()->fetch_assoc();
+    $pendingCount = $counts['p'] ?? 0;
+    $stmt->close();
+}
+
+if ($stmt = $conn->prepare("SELECT COUNT(*) AS a FROM SUPPORTREQUEST WHERE requestDesc LIKE ? AND requestStatus = 'Accepted'")) {
     $stmt->bind_param("s", $searchTerm);
     $stmt->execute();
     $counts = $stmt->get_result()->fetch_assoc();
     $acceptedCount = $counts['a'] ?? 0;
     $stmt->close();
 }
-
-// Pending count for volunteers can represent available unassigned requests matching their skills, or 0 if not tracked on dashboard
-$pendingCount = 0; 
 
 // 2. Fetch Recent Assigned Sessions for the Dashboard Table
 $requestRows = '';
@@ -43,18 +49,27 @@ if ($stmt = $conn->prepare($sql)) {
 
     if ($result && $result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
-            $status = htmlspecialchars($row['requestStatus']);
+            $rawStatus = $row['requestStatus'];
+            $status = htmlspecialchars($rawStatus, ENT_QUOTES);
+            
+            // Dynamic color coding based on the status text
+            $statusColor = '#2b6cb0'; // Default Blue for Pending
+            if ($rawStatus === 'Accepted') {
+                $statusColor = '#38a169'; // Green for Accepted
+            } elseif ($rawStatus === 'Rejected') {
+                $statusColor = '#e53e3e'; // Red for Rejected
+            }
             
             $requestRows .= '<tr>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['skillName']) . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['studentName']) . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['supportMode']) . '</td>'
-                . '<td style="padding: 10px; font-weight: bold; color: #2b6cb0;">' . $status . '</td>'
+                . '<td style="padding: 10px; font-weight: bold; color: ' . $statusColor . ';">' . $status . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['created_at']) . '</td>'
                 . '</tr>';
         }
     } else {
-        $requestRows = '<tr><td colspan="5" style="text-align: center; padding: 15px; color: #718096;">No accepted support sessions found.</td></tr>';
+        $requestRows = '<tr><td colspan="5" style="text-align: center; padding: 15px; color: #718096;">No support sessions found.</td></tr>';
     }
     $stmt->close();
 }
