@@ -11,36 +11,50 @@ if (!isset($_SESSION['studentID'])) {
 $id = $_SESSION['studentID'];
 $volunteerName = $_SESSION['name'] ?? 'Volunteer';
 
-// 1. Fetch Request Counts (Filtered for the volunteer student)
-$pendingCount = $acceptedCount = 0;
-if ($stmt = $conn->prepare("SELECT SUM(requestStatus='Pending') AS p, SUM(requestStatus IN ('Accepted','Approved')) AS a FROM SUPPORTREQUEST WHERE studentID = ?")) {
-    $stmt->bind_param("s", $id);
+// 1. Fetch Request Counts (Count sessions assigned/accepted by this volunteer)
+$acceptedCount = 0;
+$searchTerm = '%AssignedVolunteer: ' . $id . '%';
+
+if ($stmt = $conn->prepare("SELECT COUNT(*) AS a FROM SUPPORTREQUEST WHERE requestDesc LIKE ?")) {
+    $stmt->bind_param("s", $searchTerm);
     $stmt->execute();
     $counts = $stmt->get_result()->fetch_assoc();
-    $pendingCount = $counts['p'] ?? 0;
     $acceptedCount = $counts['a'] ?? 0;
     $stmt->close();
 }
 
-// 2. Fetch Recent Requests
+// Pending count for volunteers can represent available unassigned requests matching their skills, or 0 if not tracked on dashboard
+$pendingCount = 0; 
+
+// 2. Fetch Recent Assigned Sessions for the Dashboard Table
 $requestRows = '';
-if ($stmt = $conn->prepare("SELECT sr.requestDesc, sr.requestStatus, sr.supportMode, sr.created_at, sk.skillName FROM SUPPORTREQUEST sr JOIN SKILLS sk ON sr.skillID = sk.skillID WHERE sr.studentID = ? ORDER BY sr.created_at DESC LIMIT 5")) {
-    $stmt->bind_param("s", $id);
+$sql = "SELECT sr.requestDesc, sr.requestStatus, sr.supportMode, sr.created_at, sk.skillName, st.Name AS studentName 
+        FROM SUPPORTREQUEST sr 
+        JOIN SKILLS sk ON sr.skillID = sk.skillID 
+        JOIN STUDENT st ON sr.studentID = st.studentID 
+        WHERE sr.requestDesc LIKE ? 
+        ORDER BY sr.created_at DESC 
+        LIMIT 5";
+
+if ($stmt = $conn->prepare($sql)) {
+    $stmt->bind_param("s", $searchTerm);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result && $result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
+            $status = htmlspecialchars($row['requestStatus']);
+            
             $requestRows .= '<tr>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['skillName']) . '</td>'
-                . '<td style="padding: 10px;">' . htmlspecialchars($row['requestDesc']) . '</td>'
+                . '<td style="padding: 10px;">' . htmlspecialchars($row['studentName']) . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['supportMode']) . '</td>'
-                . '<td style="padding: 10px; font-weight: bold;">' . htmlspecialchars($row['requestStatus']) . '</td>'
+                . '<td style="padding: 10px; font-weight: bold; color: #2b6cb0;">' . $status . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['created_at']) . '</td>'
                 . '</tr>';
         }
     } else {
-        $requestRows = '<tr><td colspan="5" style="text-align: center; padding: 15px;">No support requests found.</td></tr>';
+        $requestRows = '<tr><td colspan="5" style="text-align: center; padding: 15px; color: #718096;">No accepted support sessions found.</td></tr>';
     }
     $stmt->close();
 }
