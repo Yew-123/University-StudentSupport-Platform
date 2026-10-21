@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Student Support Platform</title>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Link to External CSS -->
+    <link rel="stylesheet" href="VDstyle.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <header class="header">
+            <h1>University Student Support Platform</h1>
+        </header>
+
+        <div class="main-content">
+            
+            <!-- Sidebar Navigation -->
+            <aside class="sidebar">
+                <div class="nav-menu">
+                    <button class="nav-btn" onclick="switchView('requestsView', this)">
+                        <i class="fa-solid fa-calendar-check"></i> View Support Session Requests
+                    </button>
+                    <button class="nav-btn" onclick="switchView('availabilityView', this)">
+                        <i class="fa-solid fa-user-gear"></i> Manage Skills & Availability
+                    </button>
+                    <button class="nav-btn" onclick="switchView('scheduleView', this)">
+                        <i class="fa-regular fa-calendar-days"></i> Schedule Session
+                    </button>
+                    <button class="nav-btn" onclick="switchView('statusView', this)">
+                        <i class="fa-regular fa-clock"></i> View Current Support Status
+                    </button>
+                    <button class="nav-btn" onclick="switchView('historyView', this)">
+                        <i class="fa-solid fa-clock-rotate-left"></i> View Support Session History
+                    </button>
+                </div>
+                
+                <div class="logout-container">
+                    <button class="logout-btn">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out
+                    </button>
+                </div>
+            </aside>
+
+            <!-- ================= PAGE 1: MAIN DASHBOARD ================= -->
+            <main id="dashboardView" class="view-section active">
+                <h2 class="welcome-text">Welcome, [Name]</h2>
+                
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon"><i class="fa-regular fa-clock"></i></div>
+                            Pending Requests
+                        </div>
+                        <div class="stat-number">0</div>
+                        <div class="stat-desc">Awaiting response</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-icon"><i class="fa-regular fa-calendar-check"></i></div>
+                            Accepted Sessions
+                        </div>
+                        <div class="stat-number">0</div>
+                        <div class="stat-desc">Successfully accepted</div>
+                    </div>
+                </div>
+
+                <div class="recent-sessions-section">
+                    <h2>Recent Support Sessions</h2>
+                    <div class="sessions-box">(Recent Support Sessions)</div>
+                </div>
+            </main>
+
+            <!-- ================= PAGE 2: SUPPORT REQUESTS ================= -->
+            <main id="requestsView" class="view-section">
+                <div class="page-card">
+                    <div class="page-header">
+                        <button class="back-btn" onclick="switchView('dashboardView')">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                        <h2>Support Session Requests</h2>
+                    </div>
+                    
+                    <div class="content-box">
+                        (Pending Support Requests will be displayed here)
+                    </div>
+                </div>
+            </main>
+
+            <!-- ================= PAGE 3: SUPPORT HISTORY ================= -->
+            <main id="historyView" class="view-section">
+                <div class="page-card">
+                    <div class="page-header">
+                        <button class="back-btn" onclick="switchView('dashboardView')">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                        <h2>Support History</h2>
+                    </div>
+                    
+                    <div class="content-box">
+                        (Previous Support Session will be displayed here)
+                    </div>
+                </div>
+            </main>
+
+            <!-- ================= PAGE 4: CURRENT STATUS ================= -->
+            <main id="statusView" class="view-section">
+                <div class="page-card">
+                    <div class="page-header">
+                        <button class="back-btn" onclick="switchView('dashboardView')">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                        <h2>Current Support Status</h2>
+                    </div>
+                    
+                    <div class="content-box">
+                        (Current Support Status will be displayed here)
+                    </div>
+                </div>
+            </main>
+
+            <!-- ================= PAGE 5: MANAGE SKILLS & AVAILABILITY ================= -->
+            <main id="availabilityView" class="view-section">
+                <div class="page-card">
+                    <div class="page-header center-title">
+                        <h2>Manage Skills and Availability</h2>
+                    </div>
+                    
+                    <div class="form-container">
+                        <div class="form-group">
+                            <label>Skills:</label>
+                            <div class="input-wrapper has-check">
+                                <input type="text">
+                                <span class="checkmark-icon"><i class="fa-solid fa-check"></i></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Availability (Days):</label>
+                            <div class="input-wrapper has-check">
+                                <input type="text">
+                                <span class="checkmark-icon"><i class="fa-solid fa-check"></i></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Support Mode</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="supportMode" value="online"> Online
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="supportMode" value="in-person"> In-person
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="supportMode" value="both"> Both
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="action-btn primary" onclick="switchView('dashboardView')">Confirm Changes</button>
+                            <button class="action-btn secondary" onclick="switchView('dashboardView')">Back</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- ================= PAGE 6: SCHEDULE SESSION ================= -->
+            <main id="scheduleView" class="view-section">
+                <div class="page-card">
+                    <div class="page-header center-title">
+                        <h2>Schedule Session</h2>
+                    </div>
+                    
+                    <div class="form-container">
+                        <div class="form-group">
+                            <label>Date:</label>
+                            <div class="input-wrapper">
+                                <input type="text" placeholder="DD/MM/YYYY">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Time:</label>
+                            <div class="input-wrapper">
+                                <input type="text" placeholder="HH:MM AM/PM">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="action-btn primary" onclick="switchView('dashboardView')">Schedule</button>
+                            <button class="action-btn secondary" onclick="switchView('dashboardView')">Back</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+        </div>
+    </div>
+
+    <!-- Internal JavaScript (as requested, not separated) -->
+    <script>
+        // --- Navigation Logic ---
+        function switchView(viewId, btnElement) {
+            // Hide all views
+            const views = document.querySelectorAll('.view-section');
+            views.forEach(view => view.classList.remove('active'));
+            
+            // Show target view
+            document.getElementById(viewId).classList.add('active');
+
+            // Update active state on sidebar buttons (if they are passed in)
+            const navBtns = document.querySelectorAll('.nav-menu .nav-btn');
+            navBtns.forEach(btn => btn.classList.remove('active'));
+            
+            if (btnElement) {
+                btnElement.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
