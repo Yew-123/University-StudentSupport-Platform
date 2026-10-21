@@ -46,32 +46,19 @@
             <button type="submit" class="btn-open-popup">Submit Request</button>
         </form>
 
-        <!-- SUCCESS POPUP -->
         <div id="popupOverlay" class="overlay-container {{popupClass}}">
             <div class="popup-box">
                 <i class="fa-regular fa-circle-check"></i>    
                 <h2>Request Submitted</h2>
-                <p>
-                    Your support request has been saved and is now pending.
-                </p>
+                <p>Your support request has been saved and is now pending.</p>
                 <div class="popup-buttons">
-                    <button
-                        type="button"
-                        class="btn-view-details"
-                        onclick="window.location.href='Student Support Status.php'">
+                    <button type="button" class="btn-view-details" onclick="window.location.href='Student Support Status.html'">
                         View Request Details
                     </button>
-                    <!-- Dynamically links to Find Volunteer with the selected skill -->
-                    <button
-                        type="button"
-                        class="btn-find-volunteer"
-                        onclick="window.location.href='{{findVolunteerLink}}'">
+                    <button type="button" class="btn-find-volunteer" onclick="window.location.href='{{findVolunteerLink}}'">
                         Find a Volunteer
                     </button>
-                    <button
-                        type="button"
-                        class="btn-back-dashboard"
-                        onclick="window.location.href='Student Dashboard.php'">
+                    <button type="button" class="btn-back-dashboard" onclick="window.location.href='Student Dashboard.php'">
                         Back To Dashboard
                     </button>
                 </div>
@@ -80,39 +67,20 @@
     </main>
     <script>
     const supportForm = document.getElementById("supportForm");
-
-    document.getElementById("preferred-date").addEventListener("click", function () {
-        this.showPicker();
-    });
-
-    document.getElementById("preferred-time").addEventListener("click", function () {
-        this.showPicker();
-    });
+    document.getElementById("preferred-date").addEventListener("click", function () { this.showPicker(); });
+    document.getElementById("preferred-time").addEventListener("click", function () { this.showPicker(); });
 
     supportForm.addEventListener("submit", function(event) {
         const selectedDate = document.getElementById("preferred-date").value;
         const selectedTime = document.getElementById("preferred-time").value;
-
         if (selectedDate && selectedTime) {
             const selectedDateTime = new Date(selectedDate + "T" + selectedTime);
-            const currentDateTime = new Date();
-
-            if (selectedDateTime <= currentDateTime) {
+            if (selectedDateTime <= new Date()) {
                 event.preventDefault();
                 alert("Please select a future date and time.");
-                return;
             }
         }
     });
-
-    function togglePopup() {
-        const overlay = document.getElementById("popupOverlay");
-        overlay.classList.toggle("show");
-    }
-
-    function resetForm() {
-        supportForm.reset();
-    }
     </script>
 </body>
 </html>
