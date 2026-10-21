@@ -12,21 +12,19 @@ $id = $_SESSION['studentID'];
 $showPopup = '';
 $findVolunteerLink = 'Find Volunteer.php'; // Default fallback
 
-// Handle Form Submission
+// Handle Form Submission[cite: 6]
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $skillID = trim($_POST['skill'] ?? '');
     $prefDate = trim($_POST['preferred_date'] ?? '');
     $prefTime = trim($_POST['preferred_time'] ?? '');
     $supportMode = trim($_POST['support_mode'] ?? 'Online');
     
-    // Generate unique ID for your VARCHAR primary key
     $requestID = 'REQ-' . uniqid(); 
     $requestDesc = "Preferred Date: $prefDate, Time: $prefTime";
     $requestStatus = 'Pending';
     $createdAt = date('Y-m-d H:i:s');
 
     if (!empty($skillID) && !empty($prefDate) && !empty($prefTime)) {
-        // Insert support request (leave volunteerID NULL initially)
         $stmt = $conn->prepare("INSERT INTO SUPPORTREQUEST (requestID, studentID, skillID, requestDesc, requestStatus, supportMode, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
         
         if ($stmt) {
@@ -34,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($stmt->execute()) {
                 $stmt->close();
-                // Fetch the corresponding skillName for this skillID so Find Volunteer can read it
+                
                 $skillNameQuery = $conn->prepare("SELECT skillName FROM SKILLS WHERE skillID = ?");
                 $skillNameQuery->bind_param("i", $skillID);
                 $skillNameQuery->execute();
@@ -43,10 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $skillNameQuery->close();
 
                 $selectedSkillName = $skillNameRow['skillName'] ?? '';
-
-                $showPopup = 'show'; // Triggers popup CSS class in template
+                $showPopup = 'show'; 
                 
-                // Pass BOTH the skill name and requestID to the Find Volunteer page
                 $findVolunteerLink = 'Find Volunteer.php?skill=' . urlencode($selectedSkillName) . '&requestID=' . urlencode($requestID);
             } else {
                 echo "Database Insert Error: " . htmlspecialchars($stmt->error);
@@ -62,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch skills from database for dropdown options
+// Fetch skills for dropdown
 $skillOptions = '';
 $skillResult = $conn->query("SELECT skillID, skillName FROM SKILLS");
 if ($skillResult && $skillResult->num_rows > 0) {
@@ -73,7 +69,7 @@ if ($skillResult && $skillResult->num_rows > 0) {
     $skillOptions = '<option value="" disabled>No skills available</option>';
 }
 
-// Load HTML template and inject dynamic data
+// Load HTML template
 $htmlFile = 'Support Request.html';
 if (file_exists($htmlFile)) {
     $html = file_get_contents($htmlFile);
