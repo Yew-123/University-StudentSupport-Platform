@@ -97,7 +97,7 @@ if ($result->num_rows > 0) {
                         <td class="support_session_Status">' . $status . '</td>
                     </tr>
                     <tr>
-                        <td class="accept_or_reject" colspan="2">
+                        <td class="accept_or_reject">
                         <a class="accept_btn" href="volunteer current support status.php?action=accept&requestID=' . $reqID . '">
                         Accept
                         </a>
