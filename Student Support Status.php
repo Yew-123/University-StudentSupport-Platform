@@ -15,7 +15,7 @@ if (!isset($_SESSION['studentID'])) {
 }
 
 $studentID = $_SESSION['studentID'];
-$status = $_GET['status'] ?? 'Pending'; 
+$status = $_GET['status'] ?? 'All'; 
 
 if (!isset($conn) || $conn->connect_error) {
     http_response_code(500);
@@ -23,62 +23,53 @@ if (!isset($conn) || $conn->connect_error) {
     exit;
 }
 
-$sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, 
-               s.skillName AS preferredSkills 
-        FROM SUPPORTREQUEST sr
-        LEFT JOIN SKILLS s ON sr.skillID = s.skillID
-        WHERE sr.studentID = ? AND sr.requestStatus = ?
-        ORDER BY sr.created_at DESC";
+// Build query dynamically depending on whether a specific status filter is applied
+if ($status === 'All' || empty($status)) {
+    $sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, 
+                   s.skillName AS preferredSkills 
+            FROM SUPPORTREQUEST sr
+            LEFT JOIN SKILLS s ON sr.skillID = s.skillID
+            WHERE sr.studentID = ?
+            ORDER BY sr.created_at DESC";
+    $stmt = $conn->prepare($sql);
+    if ($stmt) {
+        $stmt->bind_param("s", $studentID);
+    }
+} else {
+    $sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, 
+                   s.skillName AS preferredSkills 
+            FROM SUPPORTREQUEST sr
+            LEFT JOIN SKILLS s ON sr.skillID = s.skillID
+            WHERE sr.studentID = ? AND sr.requestStatus = ?
+            ORDER BY sr.created_at DESC";
+    $stmt = $conn->prepare($sql);
+    if ($stmt) {
+        $stmt->bind_param("ss", $studentID, $status);
+    }
+}
 
-$stmt = $conn->prepare($sql);
-if (!$stmt) {
+if (!isset($stmt) || !$stmt) {
     http_response_code(500);
     echo json_encode(['error' => 'SQL preparation failed: ' . $conn->error]);
     exit;
 }
 
-$stmt->bind_param("ss", $studentID, $status); 
 $stmt->execute();
 $result = $stmt->get_result();
 
 $rows = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
 foreach ($rows as &$row) {
-    // Default fallbacks using created_at
-    $preferredDate = !empty($row['created_at']) ? date('Y-m-d', strtotime($row['created_at'])) : 'Not Specified';
-    $preferredTime = !empty($row['created_at']) ? date('H:i', strtotime($row['created_at'])) : 'Not Specified';
+    $preferredDate = 'Not Specified';
+    $preferredTime = 'Not Specified';
     $row['preferredSkills'] = $row['preferredSkills'] ?? 'Not Specified';
 
-    // Parse scheduling metadata from requestDesc if it exists
     if (!empty($row['requestDesc'])) {
-        // Look for date patterns (e.g., Date: 10/24/2026 or 2026-10-24)
-        if (preg_match('/(?:date|preferred\s*date)[:\s]+([^\s|]+)/i', $row['requestDesc'], $matches)) {
-            $parsedDate = trim($matches[1]);
-            // Convert mm/dd/yyyy format if necessary
-            if (strpos($parsedDate, '/') !== false) {
-                $timeSec = strtotime($parsedDate);
-                if ($timeSec) {
-                    $preferredDate = date('Y-m-d', $timeSec);
-                }
-            } else {
-                $preferredDate = $parsedDate;
-            }
+        if (preg_match('/Preferred Date:\s*([^\s,]+)/i', $row['requestDesc'], $matches)) {
+            $preferredDate = trim($matches[1]);
         }
-        
-        // Look for time patterns (e.g., Time: 11.14 am or 11:14)
-        if (preg_match('/(?:date|preferred\s*date)[:\s]+([^\s|]+)/i', $row['requestDesc'], $matches)) {
-            // Strip out any trailing comma captured from string concatenation
-            $parsedDate = rtrim(trim($matches[1]), ','); 
-            
-            // Convert mm/dd/yyyy format if necessary
-            if (strpos($parsedDate, '/') !== false) {
-                $timeSec = strtotime($parsedDate);
-                if ($timeSec) {
-                    $preferredDate = date('Y-m-d', $timeSec);
-                }
-            } else {
-                $preferredDate = $parsedDate;
-            }
+        if (preg_match('/Time:\s*([^\s|]+)/i', $row['requestDesc'], $matches)) {
+            $preferredTime = trim($matches[1]);
         }
     }
 
@@ -87,12 +78,11 @@ foreach ($rows as &$row) {
 
     $volunteerName = '';
     
-    // Check if requestDesc has our assigned volunteer tag
-    if (!empty($row['requestDesc']) && strpos($row['requestDesc'], 'AssignedVolunteer:') !== false) {
-        $parts = explode('AssignedVolunteer:', $row['requestDesc']);
-        if (isset($parts[1])) {
-            $assignedVolID = trim(explode('|', $parts[1])[0]); 
+    // Robustly extract the assigned volunteer ID
+    if (!empty($row['requestDesc']) && preg_match('/AssignedVolunteer:\s*([^\s|]+)/i', $row['requestDesc'], $match)) {
+        $assignedVolID = trim($match[1]);
 
+        if (!empty($assignedVolID)) {
             $volQuery = $conn->prepare("SELECT Name FROM STUDENT WHERE studentID = ?");
             if ($volQuery) {
                 $volQuery->bind_param("s", $assignedVolID);
