@@ -2,7 +2,6 @@
 session_start();
 require_once 'db.php';
 
-// Ensure user is logged in
 if (!isset($_SESSION['studentID'])) {
     header("Location: Login.html");
     exit;
@@ -11,20 +10,21 @@ if (!isset($_SESSION['studentID'])) {
 $id = $_SESSION['studentID'];
 $studentName = $_SESSION['name'] ?? 'Student';
 
-// 1. Fetch Request Counts (Included 'Confirmed' status and AssignedVolunteer checks)
+// 1. Fetch Request Counts
 $pendingCount = $acceptedCount = 0;
 
-$countSql = "SELECT 
-    SUM(requestStatus = 'Pending' AND (requestDesc NOT LIKE '%AssignedVolunteer:%' OR requestDesc IS NULL)) AS p,
-    SUM(requestStatus IN ('Accepted','Approved','Confirmed') OR requestDesc LIKE '%AssignedVolunteer:%') AS a 
-    FROM SUPPORTREQUEST 
-    WHERE studentID = ?";
-
-if ($stmt = $conn->prepare($countSql)) {
+if ($stmt = $conn->prepare("SELECT COUNT(*) AS p FROM SUPPORTREQUEST WHERE studentID = ? AND requestStatus = 'Pending'")) {
     $stmt->bind_param("s", $id);
     $stmt->execute();
     $counts = $stmt->get_result()->fetch_assoc();
     $pendingCount = $counts['p'] ?? 0;
+    $stmt->close();
+}
+
+if ($stmt = $conn->prepare("SELECT COUNT(*) AS a FROM SUPPORTREQUEST WHERE studentID = ? AND requestStatus IN ('Accepted', 'Confirmed')")) {
+    $stmt->bind_param("s", $id);
+    $stmt->execute();
+    $counts = $stmt->get_result()->fetch_assoc();
     $acceptedCount = $counts['a'] ?? 0;
     $stmt->close();
 }
@@ -45,20 +45,23 @@ if ($stmt = $conn->prepare($requestSql)) {
 
     if ($result && $result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
-            // Determine display status dynamically if volunteer is assigned
-            $displayStatus = htmlspecialchars($row['requestStatus']);
-            if (strpos($row['requestDesc'], 'AssignedVolunteer:') !== false && $displayStatus === 'Pending') {
-                $displayStatus = 'Accepted';
-            }
-
-            // Clean requestDesc for output (hide raw AssignedVolunteer tag from UI)
+            $rawStatus = $row['requestStatus'];
+            $displayStatus = htmlspecialchars($rawStatus);
             $cleanDesc = trim(explode(' | AssignedVolunteer:', $row['requestDesc'])[0]);
+
+            // Dynamic color coding based on status
+            $statusColor = '#2b6cb0'; // Default Blue for Pending
+            if ($rawStatus === 'Accepted' || $rawStatus === 'Confirmed') {
+                $statusColor = '#38a169'; // Green for Accepted/Confirmed
+            } elseif ($rawStatus === 'Rejected') {
+                $statusColor = '#e53e3e'; // Red for Rejected
+            }
 
             $requestRows .= '<tr>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['skillName']) . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($cleanDesc) . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['supportMode']) . '</td>'
-                . '<td style="padding: 10px; font-weight: bold;">' . $displayStatus . '</td>'
+                . '<td style="padding: 10px; font-weight: bold; color: ' . $statusColor . ';">' . $displayStatus . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['created_at']) . '</td>'
                 . '</tr>';
         }
@@ -68,7 +71,7 @@ if ($stmt = $conn->prepare($requestSql)) {
     $stmt->close();
 }
 
-// 3. Load HTML template and inject variables efficiently
+// 3. Load HTML template and inject variables
 $htmlFile = 'Student Dashboard.html';
 if (file_exists($htmlFile)) {
     $html = file_get_contents($htmlFile);
