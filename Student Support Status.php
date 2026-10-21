@@ -97,6 +97,13 @@ foreach ($rows as &$row) {
     }
 
     $row['volunteerName'] = $volunteerName;
+ 
+    // Add scheduling link info if request is Accepted or Confirmed
+    if ($row['requestStatus'] === 'Accepted' || $row['requestStatus'] === 'Confirmed') {
+        $row['scheduleLink'] = 'Schedule Session.php?requestID=' . urlencode($row['requestID']);
+    } else {
+        $row['scheduleLink'] = '';
+    }
 }
 
 echo json_encode($rows);
