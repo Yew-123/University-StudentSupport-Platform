@@ -5,7 +5,6 @@ error_reporting(E_ALL);
 session_start();
 require_once 'db.php';
 
-// Ensure user is logged in
 if (!isset($_SESSION['studentID'])) {
     header("Location: Login Page.html");
     exit;
@@ -16,44 +15,58 @@ if (isset($_GET['assignID']) && isset($_GET['requestID'])) {
     $volunteerID = $_GET['assignID'];
     $requestID = $_GET['requestID'];
 
-    // Use COALESCE so it doesn't break if requestDesc is empty/null
-    $updateStmt = $conn->prepare("UPDATE SUPPORTREQUEST SET requestDesc = CONCAT(COALESCE(requestDesc, ''), ' | AssignedVolunteer: ', ?) WHERE requestID = ?");
+    $fetchStmt = $conn->prepare("SELECT requestDesc FROM SUPPORTREQUEST WHERE requestID = ?");
+    $fetchStmt->bind_param("s", $requestID);
+    $fetchStmt->execute();
+    $res = $fetchStmt->get_result();
+    $currentDesc = '';
+    if ($row = $res->fetch_assoc()) {
+        $currentDesc = $row['requestDesc'] ?? '';
+    }
+    $fetchStmt->close();
+
+    // Remove any existing AssignedVolunteer tag to prevent duplicates
+    if (strpos($currentDesc, 'AssignedVolunteer:') !== false) {
+        $currentDesc = preg_replace('/\|\s*AssignedVolunteer:\s*[^\s|]+/', '', $currentDesc);
+        $currentDesc = trim($currentDesc, ' |');
+    }
+
+    // Append new volunteer tag cleanly
+    $updatedDesc = ($currentDesc !== '') ? $currentDesc . ' | AssignedVolunteer: ' . $volunteerID : 'AssignedVolunteer: ' . $volunteerID;
+
+    // Save back to database and keep status as Pending
+    $updateStmt = $conn->prepare("UPDATE SUPPORTREQUEST SET requestDesc = ?, requestStatus = 'Pending' WHERE requestID = ?");
     if ($updateStmt) {
-        $updateStmt->bind_param("ss", $volunteerID, $requestID);
+        $updateStmt->bind_param("ss", $updatedDesc, $requestID);
         $updateStmt->execute();
         $updateStmt->close();
     }
 
-    // Redirect to Support Status page after successful assignment
     header("Location: Student Support Status.html?status=Pending");
     exit;
 }
 
-// 2. Capture target requestID if passed from previous pages
-$targetRequestID = $_GET['requestID'] ?? '';
+// 2. Capture target requestID from GET or POST
+$targetRequestID = $_GET['requestID'] ?? $_POST['requestID'] ?? '';
 
-// 3. Fetch skill names from the SKILLS table for the dropdown selection
 $skillsQuery = "SELECT DISTINCT skillName FROM skills ORDER BY skillName ASC";
 $skillsResult = $conn->query($skillsQuery);
 $skillOptionsHTML = '<option value="">--Select Skill--</option>';
-$selectedSkill = $_GET['skill'] ?? '';
+$selectedSkill = $_GET['skill'] ?? $_POST['skill'] ?? '';
 
 while ($skill = $skillsResult->fetch_assoc()) {
     $isSel = ($selectedSkill == $skill['skillName']) ? 'selected' : '';
     $skillOptionsHTML .= '<option value="' . htmlspecialchars($skill['skillName']) . '" ' . $isSel . '>' . htmlspecialchars($skill['skillName']) . '</option>';
 }
 
-// 4. Capture filter parameters
-$selectedAvailability = $_GET['availability'] ?? '';
-$selectedSupportMode = $_GET['support_mode'] ?? '';
-
+$selectedAvailability = $_GET['availability'] ?? $_POST['availability'] ?? '';
+$selectedSupportMode = $_GET['support_mode'] ?? $_POST['support_mode'] ?? '';
 $volunteersHTML = '';
 
-// 5. Check if the "Apply Filters" button was clicked
-if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['support_mode'])) {
+if (isset($_GET['skill']) || isset($_POST['skill']) || isset($_GET['availability']) || isset($_POST['availability'])) {
     
     if (empty($selectedSkill) || empty($selectedAvailability) || empty($selectedSupportMode)) {
-        $volunteersHTML = '<p style="text-align: center; color: #e53e3e; padding-top: 12px;">Please fill out all fields (Skill, Availability, and Support Mode) before applying filters.</p>';
+        $volunteersHTML = '<p style="text-align: center; color: #e53e3e; padding-top: 12px;">Please fill out all fields before applying filters.</p>';
     } else {
         $sql = "SELECT DISTINCT s.studentID, s.Name, s.Email, s.phoneNo, s.Availability, s.supportMode 
                 FROM student s 
@@ -62,10 +75,6 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
                 WHERE sk.skillName = ? AND s.Availability = ? AND (s.supportMode = ? OR s.supportMode = 'Both')";
 
         $stmt = $conn->prepare($sql);
-        if ($stmt === false) {
-            die("Prepare failed: " . $conn->error);
-        }
-
         $stmt->bind_param("sss", $selectedSkill, $selectedAvailability, $selectedSupportMode);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -86,7 +95,6 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
                 $volSkillsStmt->close();
 
                 $skillsString = implode(', ', $skillNamesArray);
-
                 $vName = htmlspecialchars($vol['Name'], ENT_QUOTES);
                 $vEmail = htmlspecialchars($vol['Email'], ENT_QUOTES);
                 $vPhone = htmlspecialchars($vol['phoneNo'], ENT_QUOTES);
@@ -94,10 +102,9 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
                 $vMode = htmlspecialchars($vol['supportMode'], ENT_QUOTES);
                 $vSkills = htmlspecialchars($skillsString, ENT_QUOTES);
 
-                // Ensure targetRequestID is carried over when clicking select
-                $selectAction = !empty($targetRequestID) 
-                    ? "window.location.href='Find Volunteer.php?assignID=" . $vID . "&requestID=" . urlencode($targetRequestID) . "'"
-                    : "selectVolunteer('" . $vID . "')";
+                // Pass requestID along with assignID when clicking select
+                $reqIdParam = !empty($targetRequestID) ? '&requestID=' . urlencode($targetRequestID) : '';
+                $selectAction = "window.location.href='Find Volunteer.php?assignID=" . $vID . $reqIdParam . "'";
 
                 $volunteersHTML .= '
                     <div class="volunteer-card">
@@ -105,8 +112,7 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
                         <p><strong>Skill:</strong> ' . $vSkills . '</p> 
                         <p><strong>Availability:</strong> ' . $vAvail . '</p>
                         <div style="margin-top: 12px;">
-                            <button type="button" 
-                            onclick="viewVolunteer(\'' . $vName . '\', \'' . $vEmail . '\', \'' . $vPhone . '\', \'' . $vAvail . '\', \'' . $vMode . '\', \'' . $vSkills . '\')" >View</button>
+                            <button type="button" onclick="viewVolunteer(\'' . $vName . '\', \'' . $vEmail . '\', \'' . $vPhone . '\', \'' . $vAvail . '\', \'' . $vMode . '\', \'' . $vSkills . '\')">View</button>
                             <button type="button" onclick="' . $selectAction . '">Select</button>
                         </div>
                     </div>';
@@ -121,31 +127,25 @@ if (isset($_GET['skill']) || isset($_GET['availability']) || isset($_GET['suppor
     $volunteersHTML = '<p style="text-align: center; color: #718096; padding-top: 12px">Please fill out all fields and click "Apply Filters" to find volunteers.</p>';
 }
 
-$availabilityDefaultSelected = empty($selectedAvailability) ? 'selected' : '';
-$availabilityWeekdays = ($selectedAvailability === 'weekdays') ? 'selected' : '';
-$availabilityWeekends = ($selectedAvailability === 'weekends') ? 'selected' : '';
-$availabilityFlexible = ($selectedAvailability === 'flexible') ? 'selected' : '';
-
-$onlineChecked = ($selectedSupportMode === 'Online') ? 'checked' : '';
-$inPersonChecked = ($selectedSupportMode === 'In-person') ? 'checked' : '';
-$bothChecked = ($selectedSupportMode === 'Both') ? 'checked' : '';
-
 $htmlTemplate = file_get_contents('Find Volunteer.html');
+$htmlTemplate = str_replace([
+    '{{skillOptions}}', '{{availabilityDefaultSelected}}', '{{availabilityWeekdays}}', 
+    '{{availabilityWeekends}}', '{{availabilityFlexible}}', '{{onlineChecked}}', 
+    '{{inPersonChecked}}', '{{bothChecked}}', '{{volunteersHTML}}'
+], [
+    $skillOptionsHTML, empty($selectedAvailability) ? 'selected' : '', 
+    ($selectedAvailability === 'weekdays') ? 'selected' : '', 
+    ($selectedAvailability === 'weekends') ? 'selected' : '', 
+    ($selectedAvailability === 'flexible') ? 'selected' : '', 
+    ($selectedSupportMode === 'Online') ? 'checked' : '', 
+    ($selectedSupportMode === 'In-person') ? 'checked' : '', 
+    ($selectedSupportMode === 'Both') ? 'checked' : '', 
+    $volunteersHTML
+], $htmlTemplate);
 
-$htmlTemplate = str_replace('{{skillOptions}}', $skillOptionsHTML, $htmlTemplate);
-$htmlTemplate = str_replace('{{availabilityDefaultSelected}}', $availabilityDefaultSelected, $htmlTemplate);
-$htmlTemplate = str_replace('{{availabilityWeekdays}}', $availabilityWeekdays, $htmlTemplate);
-$htmlTemplate = str_replace('{{availabilityWeekends}}', $availabilityWeekends, $htmlTemplate);
-$htmlTemplate = str_replace('{{availabilityFlexible}}', $availabilityFlexible, $htmlTemplate);
-$htmlTemplate = str_replace('{{onlineChecked}}', $onlineChecked, $htmlTemplate);
-$htmlTemplate = str_replace('{{inPersonChecked}}', $inPersonChecked, $htmlTemplate);
-$htmlTemplate = str_replace('{{bothChecked}}', $bothChecked, $htmlTemplate);
-$htmlTemplate = str_replace('{{volunteersHTML}}', $volunteersHTML, $htmlTemplate);
-
-
-if (!empty($targetRequestID)) {
-    $htmlTemplate = str_replace('</form>', '<input type="hidden" name="requestID" value="' . htmlspecialchars($targetRequestID, ENT_QUOTES) . '"></form>', $htmlTemplate);
-}
+// Permanently bind the requestID into the form action URL so it never gets lost during filtering
+$formAction = !empty($targetRequestID) ? 'Find Volunteer.php?requestID=' . urlencode($targetRequestID) : 'Find Volunteer.php';
+$htmlTemplate = str_replace('action=""', 'action="' . $formAction . '"', $htmlTemplate);
 
 echo $htmlTemplate;
 $conn->close();
