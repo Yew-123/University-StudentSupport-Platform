@@ -1259,8 +1259,7 @@ option:hover {
     margin: 0 auto;
 }
 
-
-.support_session header{
+.support_session_requests header{
     display: flex; 
     align-items: center; 
     margin-bottom: 12px;
