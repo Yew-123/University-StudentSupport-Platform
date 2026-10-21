@@ -21,11 +21,11 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const statusFilter = urlParams.get('status') || 'Pending';
+            const statusFilter = urlParams.get('status') || 'All';
             const container = document.getElementById("tables-container");
             const statusMessage = document.getElementById("status-message");
 
-            fetch(`Student%20Support%20Status.php?status=${encodeURIComponent(statusFilter)}`)
+            fetch(`Student Support Status.php?status=${encodeURIComponent(statusFilter)}`)
                 .then(response => {
                     if (!response.ok) throw new Error("Unauthorized or server error");
                     return response.json();
@@ -46,7 +46,6 @@
                         const table = document.createElement("table");
                         table.className = "support_status_table";
                         
-                        // Handle Volunteer Display: If volunteerName exists, show it. Otherwise show "Choose Volunteer" action link.
                         let volunteerDisplay = '';
                         if (request.volunteerName && request.volunteerName.trim() !== '') {
                             volunteerDisplay = escapeHtml(request.volunteerName);
@@ -55,8 +54,21 @@
                                 <span style="color: #e53e3e; display: block; margin-bottom: 5px;">No volunteer chosen</span>
                                 <a href="Find Volunteer.php?requestID=${encodeURIComponent(request.requestID)}&skill=${encodeURIComponent(request.preferredSkills)}" 
                                    style="background: #28a745; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 13px; display: inline-block;">
-                                   Choose Volunteer
+                                    Choose Volunteer
                                 </a>`;
+                        }
+
+                        // Determine dynamic status color and styling
+                        let statusColor = '#4a5568'; // Default text color
+                        let statusBg = '#edf2f7';   // Default background badge color
+                        const rawStatus = request.requestStatus;
+
+                        if (rawStatus === 'Accepted' || rawStatus === 'Confirmed') {
+                            statusColor = '#38a169'; // Green
+                            statusBg = '#f0fff4';
+                        } else if (rawStatus === 'Rejected') {
+                            statusColor = '#e53e3e'; // Red
+                            statusBg = '#fff5f5';
                         }
 
                         table.innerHTML = `
@@ -84,8 +96,8 @@
                                 <tr>
                                     <th>Status</th>
                                     <td>
-                                        <span class="status-badge ${escapeHtml(request.requestStatus.toLowerCase())}">
-                                            <i class="fa-solid fa-circle-info"></i> ${escapeHtml(request.requestStatus)}
+                                        <span class="status-badge" style="color: ${statusColor}; background-color: ${statusBg}; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block;">
+                                            <i class="fa-solid fa-circle-info"></i> ${escapeHtml(rawStatus)}
                                         </span>
                                     </td>
                                 </tr>
