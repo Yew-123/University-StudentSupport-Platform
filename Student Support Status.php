@@ -44,9 +44,46 @@ $result = $stmt->get_result();
 $rows = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
 foreach ($rows as &$row) {
-    $row['preferredDate'] = !empty($row['created_at']) ? date('Y-m-d', strtotime($row['created_at'])) : 'Not Specified';
-    $row['preferredTime'] = !empty($row['created_at']) ? date('H:i', strtotime($row['created_at'])) : 'Not Specified';
+    // Default fallbacks using created_at
+    $preferredDate = !empty($row['created_at']) ? date('Y-m-d', strtotime($row['created_at'])) : 'Not Specified';
+    $preferredTime = !empty($row['created_at']) ? date('H:i', strtotime($row['created_at'])) : 'Not Specified';
     $row['preferredSkills'] = $row['preferredSkills'] ?? 'Not Specified';
+
+    // Parse scheduling metadata from requestDesc if it exists
+    if (!empty($row['requestDesc'])) {
+        // Look for date patterns (e.g., Date: 10/24/2026 or 2026-10-24)
+        if (preg_match('/(?:date|preferred\s*date)[:\s]+([^\s|]+)/i', $row['requestDesc'], $matches)) {
+            $parsedDate = trim($matches[1]);
+            // Convert mm/dd/yyyy format if necessary
+            if (strpos($parsedDate, '/') !== false) {
+                $timeSec = strtotime($parsedDate);
+                if ($timeSec) {
+                    $preferredDate = date('Y-m-d', $timeSec);
+                }
+            } else {
+                $preferredDate = $parsedDate;
+            }
+        }
+        
+        // Look for time patterns (e.g., Time: 11.14 am or 11:14)
+        if (preg_match('/(?:date|preferred\s*date)[:\s]+([^\s|]+)/i', $row['requestDesc'], $matches)) {
+            // Strip out any trailing comma captured from string concatenation
+            $parsedDate = rtrim(trim($matches[1]), ','); 
+            
+            // Convert mm/dd/yyyy format if necessary
+            if (strpos($parsedDate, '/') !== false) {
+                $timeSec = strtotime($parsedDate);
+                if ($timeSec) {
+                    $preferredDate = date('Y-m-d', $timeSec);
+                }
+            } else {
+                $preferredDate = $parsedDate;
+            }
+        }
+    }
+
+    $row['preferredDate'] = $preferredDate;
+    $row['preferredTime'] = $preferredTime;
 
     $volunteerName = '';
     
