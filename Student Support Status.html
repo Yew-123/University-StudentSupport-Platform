@@ -58,16 +58,13 @@
                                 </a>`;
                         }
 
-                        // Determine dynamic status color and styling
-                        let statusColor = '#4a5568'; // Default text color
-                        let statusBg = '#edf2f7';   // Default background badge color
+                        let statusColor = '#4a5568';
+                        let statusBg = '#edf2f7';
                         const rawStatus = request.requestStatus;
-
-                        // Generate Schedule Button dynamically if provided by backend endpoint
                         let scheduleButtonHTML = '';
 
                         if (rawStatus === 'Accepted' || rawStatus === 'Confirmed') {
-                            statusColor = '#38a169'; // Green
+                            statusColor = '#38a169'; 
                             statusBg = '#f0fff4';
                             
                             if (request.scheduleLink) {
@@ -77,14 +74,13 @@
                                     </a>`;
                             }
                         } else if (rawStatus === 'Scheduled') {
-                            statusColor = '#805ad5'; // Distinct Purple for Scheduled
-                            statusBg = '#f3e8ff';    // Soft light purple background
+                            statusColor = '#805ad5'; 
+                            statusBg = '#f3e8ff';
                         } else if (rawStatus === 'Rejected') {
-                            statusColor = '#e53e3e'; // Red
+                            statusColor = '#e53e3e'; 
                             statusBg = '#fff5f5';
                         } else {
-                            // Pending or any other default state
-                            statusColor = '#d69e2e'; // Warm Amber for Pending
+                            statusColor = '#d69e2e'; 
                             statusBg = '#fffaf0';
                         }
 
@@ -97,6 +93,10 @@
                                 <tr>
                                     <th>Preferred Skills</th>
                                     <td>${escapeHtml(request.preferredSkills)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Assistance Required</th>
+                                    <td>${escapeHtml(request.assistanceRequired)}</td>
                                 </tr>
                                 <tr>
                                     <th>Preferred Date</th>
