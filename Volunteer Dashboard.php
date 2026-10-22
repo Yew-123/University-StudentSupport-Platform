@@ -52,6 +52,29 @@ if ($stmt = $conn->prepare($sql)) {
             $rawStatus = $row['requestStatus'];
             $status = htmlspecialchars($rawStatus, ENT_QUOTES);
             
+            // Extract Assistance Description and Preferred Date/Time from requestDesc
+            $assistanceRequired = 'Not Specified';
+            $preferredDate = '';
+            $preferredTime = '';
+
+            if (!empty($row['requestDesc'])) {
+                if (preg_match('/Assistance:\s*(.*?)\s*(?:\||$)/i', $row['requestDesc'], $matches)) {
+                    $assistanceRequired = trim($matches[1]);
+                } else {
+                    $assistanceRequired = $row['requestDesc'];
+                }
+
+                if (preg_match('/Preferred Date:\s*([^\s,]+)/i', $row['requestDesc'], $matches)) {
+                    $preferredDate = trim($matches[1]);
+                }
+                if (preg_match('/Time:\s*([^\s|]+)/i', $row['requestDesc'], $matches)) {
+                    $preferredTime = trim($matches[1]);
+                }
+            }
+
+            // Combine preferred date and time cleanly
+            $prefDateTimeDisplay = ($preferredDate && $preferredTime) ? $preferredDate . ' ' . $preferredTime : ($preferredDate ?: 'Not Specified');
+            
             // Dynamic color coding matching your session and status views
             $statusColor = '#d69e2e'; // Warm Amber for Pending
             if ($rawStatus === 'Accepted' || $rawStatus === 'Confirmed') {
@@ -64,14 +87,15 @@ if ($stmt = $conn->prepare($sql)) {
             
             $requestRows .= '<tr>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['skillName']) . '</td>'
-                . '<td style="padding: 10px;">' . htmlspecialchars($row['studentName']) . '</td>'
+                . '<td style="padding: 10px;">' . htmlspecialchars($assistanceRequired) . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['supportMode']) . '</td>'
                 . '<td style="padding: 10px; font-weight: bold; color: ' . $statusColor . ';">' . $status . '</td>'
+                . '<td style="padding: 10px;">' . htmlspecialchars($prefDateTimeDisplay) . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['created_at']) . '</td>'
                 . '</tr>';
         }
     } else {
-        $requestRows = '<tr><td colspan="5" style="text-align: center; padding: 15px; color: #718096;">No support sessions found.</td></tr>';
+        $requestRows = '<tr><td colspan="6" style="text-align: center; padding: 15px; color: #718096;">No support sessions found.</td></tr>';
     }
     $stmt->close();
 }
