@@ -50,9 +50,11 @@ if ($stmt = $conn->prepare($requestSql)) {
             $cleanDesc = trim(explode(' | AssignedVolunteer:', $row['requestDesc'])[0]);
 
             // Dynamic color coding based on status
-            $statusColor = '#2b6cb0'; // Default Blue for Pending
+            $statusColor = '#d69e2e'; // Warm Amber for Pending
             if ($rawStatus === 'Accepted' || $rawStatus === 'Confirmed') {
-                $statusColor = '#38a169'; // Green for Accepted/Confirmed
+                $statusColor = '#38a169'; // Green for Accepted
+            } elseif ($rawStatus === 'Scheduled') {
+                $statusColor = '#805ad5'; // Purple for Scheduled
             } elseif ($rawStatus === 'Rejected') {
                 $statusColor = '#e53e3e'; // Red for Rejected
             }
