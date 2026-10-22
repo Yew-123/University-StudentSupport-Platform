@@ -10,9 +10,8 @@ if (!isset($_SESSION['studentID']) || $_SESSION['role'] !== 'student') {
 
 $id = $_SESSION['studentID'];
 $showPopup = '';
-$findVolunteerLink = 'Find Volunteer.php'; // Default fallback
 
-// Handle Form Submission[cite: 6]
+// Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $skillID = trim($_POST['skill'] ?? '');
     $prefDate = trim($_POST['preferred_date'] ?? '');
@@ -32,18 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($stmt->execute()) {
                 $stmt->close();
-                
-                $skillNameQuery = $conn->prepare("SELECT skillName FROM SKILLS WHERE skillID = ?");
-                $skillNameQuery->bind_param("i", $skillID);
-                $skillNameQuery->execute();
-                $skillNameRes = $skillNameQuery->get_result();
-                $skillNameRow = $skillNameRes->fetch_assoc();
-                $skillNameQuery->close();
-
-                $selectedSkillName = $skillNameRow['skillName'] ?? '';
                 $showPopup = 'show'; 
-                
-                $findVolunteerLink = 'Find Volunteer.php?skill=' . urlencode($selectedSkillName) . '&requestID=' . urlencode($requestID);
             } else {
                 echo "Database Insert Error: " . htmlspecialchars($stmt->error);
                 exit;
@@ -75,9 +63,8 @@ if (file_exists($htmlFile)) {
     $html = file_get_contents($htmlFile);
     
     $placeholders = [
-        '{{skillOptions}}'      => $skillOptions,
-        '{{popupClass}}'        => $showPopup,
-        '{{findVolunteerLink}}' => $findVolunteerLink
+        '{{skillOptions}}' => $skillOptions,
+        '{{popupClass}}'   => $showPopup
     ];
 
     echo str_replace(array_keys($placeholders), array_values($placeholders), $html);
