@@ -14,16 +14,18 @@ $showPopup = '';
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $skillID = trim($_POST['skill'] ?? '');
+    $assistance = trim($_POST['assistance'] ?? '');
     $prefDate = trim($_POST['preferred_date'] ?? '');
     $prefTime = trim($_POST['preferred_time'] ?? '');
     $supportMode = trim($_POST['support_mode'] ?? 'Online');
     
     $requestID = 'REQ-' . uniqid(); 
-    $requestDesc = "Preferred Date: $prefDate, Time: $prefTime";
+    // Safely combine description fields while preserving regex compatibility for date/time parsing
+    $requestDesc = "Assistance: $assistance | Preferred Date: $prefDate, Time: $prefTime";
     $requestStatus = 'Pending';
     $createdAt = date('Y-m-d H:i:s');
 
-    if (!empty($skillID) && !empty($prefDate) && !empty($prefTime)) {
+    if (!empty($skillID) && !empty($assistance) && !empty($prefDate) && !empty($prefTime)) {
         $stmt = $conn->prepare("INSERT INTO SUPPORTREQUEST (requestID, studentID, skillID, requestDesc, requestStatus, supportMode, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
         
         if ($stmt) {
