@@ -64,15 +64,25 @@ if ($result->num_rows > 0) {
         $rawStatus = $req['requestStatus'];
         $displayStatus = htmlspecialchars($rawStatus, ENT_QUOTES);
 
-        // Determine dynamic status colors (Green for Accepted, Red for Rejected, Blue for Pending)
-        $statusColor = '#2b6cb0'; // Default Blue
-        if ($rawStatus === 'Accepted') {
+        // Determine dynamic status colors and background badge styling matching the student view
+        $statusColor = '#4a5568'; 
+        $statusBg = '#edf2f7';
+
+        if ($rawStatus === 'Accepted' || $rawStatus === 'Confirmed') {
             $statusColor = '#38a169'; // Green
+            $statusBg = '#f0fff4';
+        } elseif ($rawStatus === 'Scheduled') {
+            $statusColor = '#805ad5'; // Purple for Scheduled
+            $statusBg = '#f3e8ff';
         } elseif ($rawStatus === 'Rejected') {
             $statusColor = '#e53e3e'; // Red
+            $statusBg = '#fff5f5';
+        } else {
+            $statusColor = '#2b6cb0'; // Default Blue / Pending
+            $statusBg = '#ebf8ff';
         }
 
-        // Conditionally show buttons only if status is Pending
+        // Conditionally show buttons based on status
         $actionButtonsHTML = '';
         if ($rawStatus === 'Pending') {
             $actionButtonsHTML = '
@@ -80,10 +90,18 @@ if ($result->num_rows > 0) {
                     <a class="accept_btn" href="Volunteer Support Session Requests.php?action=accept&requestID=' . $reqID . '" onclick="return confirm(\'Are you sure you want to accept this session?\');">Accept</a>
                     <a class="reject_btn" href="Volunteer Support Session Requests.php?action=reject&requestID=' . $reqID . '" onclick="return confirm(\'Are you sure you want to reject this session?\');">Reject</a>
                 </td>';
+        } elseif ($rawStatus === 'Accepted' || $rawStatus === 'Confirmed') {
+            $actionButtonsHTML = '
+                <td>
+                    <a href="Schedule Session.php?requestID=' . $reqID . '&from=volunteer" 
+                       style="background: #3182ce; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; display: inline-block;">
+                        <i class="fa-solid fa-calendar-days"></i> Schedule Session
+                    </a>
+                </td>';
         } else {
             $actionButtonsHTML = '
-                <td style="text-align: center; font-style: italic; color: ' . $statusColor . '; font-weight: bold;">
-                    Response Recorded: ' . $displayStatus . '
+                <td style="font-style: italic; color: #718096; font-size: 13px;">
+                    Session status finalized
                 </td>';
         }
 
@@ -96,8 +114,16 @@ if ($result->num_rows > 0) {
                     <tr><th>Phone No</th><td>' . $studentPhone . '</td></tr>
                     <tr><th>Support Mode</th><td>' . $supportMode . '</td></tr>
                     <tr><th>Date Requested</th><td>' . $createdAt . '</td></tr>
-                    <tr><th>Status</th><td class="support_session_Status" style="color: ' . $statusColor . '; font-weight: bold;">' . $displayStatus . '</td></tr>
                     <tr>
+                        <th>Status</th>
+                        <td>
+                            <span class="status-badge" style="color: ' . $statusColor . '; background-color: ' . $statusBg . '; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block;">
+                                <i class="fa-solid fa-circle-info"></i> ' . $displayStatus . '
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                    <td></td>
                         ' . $actionButtonsHTML . '
                     </tr>
                 </tbody>
