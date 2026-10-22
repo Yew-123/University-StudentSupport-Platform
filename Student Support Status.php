@@ -23,7 +23,6 @@ if (!isset($conn) || $conn->connect_error) {
     exit;
 }
 
-// Build query dynamically depending on whether a specific status filter is applied
 if ($status === 'All' || empty($status)) {
     $sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, 
                    s.skillName AS preferredSkills 
@@ -62,9 +61,18 @@ $rows = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 foreach ($rows as &$row) {
     $preferredDate = 'Not Specified';
     $preferredTime = 'Not Specified';
+    $assistanceRequired = 'Not Specified';
     $row['preferredSkills'] = $row['preferredSkills'] ?? 'Not Specified';
 
     if (!empty($row['requestDesc'])) {
+        // Extract Assistance text if formatted with prefix
+        if (preg_match('/Assistance:\s*(.*?)\s*\|\s*Preferred Date:/i', $row['requestDesc'], $matches)) {
+            $assistanceRequired = trim($matches[1]);
+        } else {
+            // Fallback for older records without prefix
+            $assistanceRequired = $row['requestDesc'];
+        }
+
         if (preg_match('/Preferred Date:\s*([^\s,]+)/i', $row['requestDesc'], $matches)) {
             $preferredDate = trim($matches[1]);
         }
@@ -75,10 +83,10 @@ foreach ($rows as &$row) {
 
     $row['preferredDate'] = $preferredDate;
     $row['preferredTime'] = $preferredTime;
+    $row['assistanceRequired'] = $assistanceRequired;
 
     $volunteerName = '';
     
-    // Robustly extract the assigned volunteer ID
     if (!empty($row['requestDesc']) && preg_match('/AssignedVolunteer:\s*([^\s|]+)/i', $row['requestDesc'], $match)) {
         $assignedVolID = trim($match[1]);
 
@@ -97,8 +105,7 @@ foreach ($rows as &$row) {
     }
 
     $row['volunteerName'] = $volunteerName;
- 
-    // Add scheduling link info if request is Accepted or Confirmed
+
     if ($row['requestStatus'] === 'Accepted' || $row['requestStatus'] === 'Confirmed') {
         $row['scheduleLink'] = 'Schedule Session.php?requestID=' . urlencode($row['requestID']);
     } else {
