@@ -76,7 +76,18 @@
     </div>
 
     <script>
-        function viewVolunteer(name, email, phone, availability, supportMode, skills) {
+        // Store current selected volunteer ID globally across the script scope
+        let currentSelectedVolunteerID = '';
+        let currentRequestIDParam = '';
+
+        function viewVolunteer(studentID, name, email, phone, availability, supportMode, skills) {
+            currentSelectedVolunteerID = studentID;
+
+            // Extract requestID from current URL if present to preserve it during modal selection
+            const urlParams = new URLSearchParams(window.location.search);
+            const reqID = urlParams.get('requestID');
+            currentRequestIDParam = reqID ? `&requestID=${encodeURIComponent(reqID)}` : '';
+
             document.getElementById('profileDetails').innerHTML = `
                 <h3><strong></strong> ${name}</h3>
                 <p><strong>Phone Number:</strong><br>${phone}</p>
@@ -89,12 +100,18 @@
         }
 
         function selectVolunteer(studentID) {
-            document.getElementById('successModal').style.display = 'flex';
+            const urlParams = new URLSearchParams(window.location.search);
+            const reqID = urlParams.get('requestID');
+            const reqParam = reqID ? `&requestID=${encodeURIComponent(reqID)}` : '';
+            window.location.href = `Find Volunteer.php?assignID=${encodeURIComponent(studentID)}${reqParam}`;
         }
 
         function selectFromModal() {
-            closeModal('profileModal');
-            document.getElementById('successModal').style.display = 'flex';
+            if (currentSelectedVolunteerID) {
+                window.location.href = `Find Volunteer.php?assignID=${encodeURIComponent(currentSelectedVolunteerID)}${currentRequestIDParam}`;
+            } else {
+                alert("Error: No volunteer selected.");
+            }
         }
 
         function closeModal(modalId) {
