@@ -46,8 +46,32 @@ if ($stmt = $conn->prepare($requestSql)) {
     if ($result && $result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
             $rawStatus = $row['requestStatus'];
-            $displayStatus = htmlspecialchars($rawStatus);
-            $cleanDesc = trim(explode(' | AssignedVolunteer:', $row['requestDesc'])[0]);
+            $displayStatus = htmlspecialchars($rawStatus, ENT_QUOTES);
+            
+            // Extract Assistance Description and Preferred Date/Time cleanly
+            $assistanceRequired = 'Not Specified';
+            $preferredDate = '';
+            $preferredTime = '';
+
+            if (!empty($row['requestDesc'])) {
+                // Strip off trailing volunteer tag if present first
+                $baseDesc = explode(' | AssignedVolunteer:', $row['requestDesc'])[0];
+
+                if (preg_match('/Assistance:\s*(.*?)\s*(?:\||$)/i', $baseDesc, $matches)) {
+                    $assistanceRequired = trim($matches[1]);
+                } else {
+                    $assistanceRequired = $baseDesc;
+                }
+
+                if (preg_match('/Preferred Date:\s*([^\s,]+)/i', $baseDesc, $matches)) {
+                    $preferredDate = trim($matches[1]);
+                }
+                if (preg_match('/Time:\s*([^\s|]+)/i', $baseDesc, $matches)) {
+                    $preferredTime = trim($matches[1]);
+                }
+            }
+
+            $prefDateTimeDisplay = ($preferredDate && $preferredTime) ? $preferredDate . ' ' . $preferredTime : ($preferredDate ?: 'Not Specified');
 
             // Dynamic color coding based on status
             $statusColor = '#d69e2e'; // Warm Amber for Pending
@@ -61,14 +85,15 @@ if ($stmt = $conn->prepare($requestSql)) {
 
             $requestRows .= '<tr>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['skillName']) . '</td>'
-                . '<td style="padding: 10px;">' . htmlspecialchars($cleanDesc) . '</td>'
+                . '<td style="padding: 10px;">' . htmlspecialchars($assistanceRequired) . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['supportMode']) . '</td>'
                 . '<td style="padding: 10px; font-weight: bold; color: ' . $statusColor . ';">' . $displayStatus . '</td>'
+                . '<td style="padding: 10px;">' . htmlspecialchars($prefDateTimeDisplay) . '</td>'
                 . '<td style="padding: 10px;">' . htmlspecialchars($row['created_at']) . '</td>'
                 . '</tr>';
         }
     } else {
-        $requestRows = '<tr><td colspan="5" style="text-align: center; padding: 15px;">No support requests found.</td></tr>';
+        $requestRows = '<tr><td colspan="6" style="text-align: center; padding: 15px; color: #718096;">No support requests found.</td></tr>';
     }
     $stmt->close();
 }
@@ -79,10 +104,10 @@ if (file_exists($htmlFile)) {
     $html = file_get_contents($htmlFile);
     
     $placeholders = [
-        '{{studentName}}'  => htmlspecialchars($studentName),
-        '{{pendingCount}}' => $pendingCount,
-        '{{acceptedCount}}'=> $acceptedCount,
-        '{{requestRows}}'  => $requestRows
+        '{{studentName}}'   => htmlspecialchars($studentName),
+        '{{pendingCount}}'  => $pendingCount,
+        '{{acceptedCount}}' => $acceptedCount,
+        '{{requestRows}}'   => $requestRows
     ];
     
     echo str_replace(array_keys($placeholders), array_values($placeholders), $html);
