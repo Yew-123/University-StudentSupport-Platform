@@ -24,7 +24,7 @@ if ($stmt = $conn->prepare("SELECT COUNT(*) AS p FROM SUPPORTREQUEST WHERE reque
     $stmt->close();
 }
 
-if ($stmt = $conn->prepare("SELECT COUNT(*) AS a FROM SUPPORTREQUEST WHERE requestDesc LIKE ? AND requestStatus = 'Accepted'")) {
+if ($stmt = $conn->prepare("SELECT COUNT(*) AS a FROM SUPPORTREQUEST WHERE requestDesc LIKE ? AND (requestStatus = 'Accepted' OR requestStatus = 'Confirmed')")) {
     $stmt->bind_param("s", $searchTerm);
     $stmt->execute();
     $counts = $stmt->get_result()->fetch_assoc();
@@ -52,10 +52,12 @@ if ($stmt = $conn->prepare($sql)) {
             $rawStatus = $row['requestStatus'];
             $status = htmlspecialchars($rawStatus, ENT_QUOTES);
             
-            // Dynamic color coding based on the status text
-            $statusColor = '#2b6cb0'; // Default Blue for Pending
-            if ($rawStatus === 'Accepted') {
+            // Dynamic color coding matching your session and status views
+            $statusColor = '#d69e2e'; // Warm Amber for Pending
+            if ($rawStatus === 'Accepted' || $rawStatus === 'Confirmed') {
                 $statusColor = '#38a169'; // Green for Accepted
+            } elseif ($rawStatus === 'Scheduled') {
+                $statusColor = '#805ad5'; // Purple for Scheduled
             } elseif ($rawStatus === 'Rejected') {
                 $statusColor = '#e53e3e'; // Red for Rejected
             }
