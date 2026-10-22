@@ -61,6 +61,17 @@ if ($result->num_rows > 0) {
         $supportMode = htmlspecialchars($req['supportMode'], ENT_QUOTES);
         $createdAt = htmlspecialchars($req['created_at'], ENT_QUOTES);
         
+        // Extract Assistance Required text from requestDesc safely
+        $assistanceRequired = 'Not Specified';
+        if (!empty($req['requestDesc'])) {
+            if (preg_match('/Assistance:\s*(.*?)\s*\|\s*Preferred Date:/i', $req['requestDesc'], $matches)) {
+                $assistanceRequired = trim($matches[1]);
+            } else {
+                $assistanceRequired = $req['requestDesc'];
+            }
+        }
+        $assistanceDisplay = htmlspecialchars($assistanceRequired, ENT_QUOTES);
+
         $rawStatus = $req['requestStatus'];
         $displayStatus = htmlspecialchars($rawStatus, ENT_QUOTES);
 
@@ -92,7 +103,7 @@ if ($result->num_rows > 0) {
                 </td>';
         } elseif ($rawStatus === 'Accepted' || $rawStatus === 'Confirmed') {
             $actionButtonsHTML = '
-                <td>
+                <td style="text-align: center;">
                     <a href="Schedule Session.php?requestID=' . $reqID . '&from=volunteer" 
                        style="background: #3182ce; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; display: inline-block;">
                         <i class="fa-solid fa-calendar-days"></i> Schedule Session
@@ -100,7 +111,7 @@ if ($result->num_rows > 0) {
                 </td>';
         } else {
             $actionButtonsHTML = '
-                <td style="font-style: italic; color: #718096; font-size: 13px;">
+                <td style="text-align: center; font-style: italic; color: #718096; font-size: 13px;">
                     Session status finalized
                 </td>';
         }
@@ -109,6 +120,7 @@ if ($result->num_rows > 0) {
              <table class="support_session_table">
                 <tbody>
                     <tr><th>Support Topic</th><td>' . $skillName . '</td></tr>
+                    <tr><th>Assistance Required</th><td>' . $assistanceDisplay . '</td></tr>
                     <tr><th>Student Name</th><td>' . $studentName . '</td></tr>
                     <tr><th>Student Email</th><td>' . $studentEmail . '</td></tr>
                     <tr><th>Phone No</th><td>' . $studentPhone . '</td></tr>
@@ -123,7 +135,6 @@ if ($result->num_rows > 0) {
                         </td>
                     </tr>
                     <tr>
-                    <td></td>
                         ' . $actionButtonsHTML . '
                     </tr>
                 </tbody>
