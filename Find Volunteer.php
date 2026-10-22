@@ -112,7 +112,7 @@ if (isset($_GET['skill']) || isset($_POST['skill']) || isset($_GET['availability
                         <p><strong>Skill:</strong> ' . $vSkills . '</p> 
                         <p><strong>Availability:</strong> ' . $vAvail . '</p>
                         <div style="margin-top: 12px;">
-                            <button type="button" onclick="viewVolunteer(\'' . $vName . '\', \'' . $vEmail . '\', \'' . $vPhone . '\', \'' . $vAvail . '\', \'' . $vMode . '\', \'' . $vSkills . '\')">View</button>
+                            <button type="button" onclick="viewVolunteer(\'' . $vID . '\', \'' . $vName . '\', \'' . $vEmail . '\', \'' . $vPhone . '\', \'' . $vAvail . '\', \'' . $vMode . '\', \'' . $vSkills . '\')">View</button>
                             <button type="button" onclick="' . $selectAction . '">Select</button>
                         </div>
                     </div>';
