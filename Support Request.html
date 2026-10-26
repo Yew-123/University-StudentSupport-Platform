@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <title>Request Support</title>
+</head>
+<body>
+    <main class="request_support">
+        <form class="request_support_form" id="supportForm" action="" method="POST">
+            <h1>Request Support Form</h1>
+            <label for="skill">Preferred Skills</label>
+            <div class="select-wrapper">
+                <select name="skill" id="skill" required>
+                    <option value="" disabled selected>--Select Skill--</option>
+                    {{skillOptions}}
+                </select>
+                <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
+
+            <label for="assistance">Assistance Required</label>
+            <div class="select-wrapper" style="height: auto;">
+                <textarea id="assistance" name="assistance" rows="3" placeholder="Describe the specific assistance you require..." required style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+
+            <label for="preferred-date">Preferred Date:</label>
+            <div class="select-wrapper">
+                <input type="date" id="preferred-date" name="preferred_date" required>
+                <i class="fa-regular fa-calendar select-calendar"></i>
+            </div>
+
+            <label for="preferred-time">Preferred Time:</label>
+            <div class="select-wrapper">
+                <input type="time" id="preferred-time" name="preferred_time" required>
+                <i class="fa-regular fa-clock select-time"></i>
+            </div>
+        
+            <label>Support Mode</label>
+            <div class="support-mode">
+                <input type="radio" id="online" name="support_mode" value="Online" required>
+                <label for="online">Online</label>
+                <input type="radio" id="in-person" name="support_mode" value="In-person">
+                <label for="in-person">In-person</label>
+                <input type="radio" id="both" name="support_mode" value="Both">
+                <label for="both">Both</label>
+            </div>
+
+            <button type="button" onclick="window.location.href='Student Dashboard.php'">Cancel</button>
+            <button type="submit" class="btn-open-popup">Submit Request</button>
+        </form>
+
+        <div id="popupOverlay" class="overlay-container {{popupClass}}">
+            <div class="popup-box">
+                <i class="fa-regular fa-circle-check"></i>    
+                <h2>Request Submitted</h2>
+                <p>Your support request has been saved and is now pending.</p>
+                <div class="popup-buttons">
+                    <button type="button" class="btn-view-details" onclick="window.location.href='Student Support Status.html'">
+                        View Request Details
+                    </button>
+                    <button type="button" class="btn-back-dashboard" onclick="window.location.href='Student Dashboard.php'">
+                        Back To Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+    const supportForm = document.getElementById("supportForm");
+    document.getElementById("preferred-date").addEventListener("click", function () { this.showPicker(); });
+    document.getElementById("preferred-time").addEventListener("click", function () { this.showPicker(); });
+
+    supportForm.addEventListener("submit", function(event) {
+        const selectedDate = document.getElementById("preferred-date").value;
+        const selectedTime = document.getElementById("preferred-time").value;
+        if (selectedDate && selectedTime) {
+            const selectedDateTime = new Date(selectedDate + "T" + selectedTime);
+            if (selectedDateTime <= new Date()) {
+                event.preventDefault();
+                alert("Please select a future date and time.");
+            }
+        }
+    });
+    </script>
+</body>
+</html>

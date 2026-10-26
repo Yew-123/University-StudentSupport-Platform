@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <title>Student Support Status</title>
+</head>
+<body>
+    <main class="support_status" id="tables-container">
+         <header>
+            <button type="button" onclick="window.location.href='Student Dashboard.php'" class="backbutton">
+                <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+            </button>
+            <h1>Support Request Status</h1>
+         </header>   
+        <div id="status-message" style="text-align: center;">Loading requests...</div>
+    </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const statusFilter = urlParams.get('status') || 'All';
+            const container = document.getElementById("tables-container");
+            const statusMessage = document.getElementById("status-message");
+
+            fetch(`Student Support Status.php?status=${encodeURIComponent(statusFilter)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Unauthorized or server error");
+                    return response.json();
+                })
+                .then(data => {
+                    if (statusMessage) statusMessage.remove(); 
+
+                    if (data.length === 0) {
+                        const noDataMsg = document.createElement("div");
+                        noDataMsg.style.textAlign = "center";
+                        noDataMsg.style.marginTop = "20px";
+                        noDataMsg.innerHTML = `No support requests found (${escapeHtml(statusFilter)}).`;
+                        container.appendChild(noDataMsg);
+                        return;
+                    }
+
+                    data.forEach(request => {
+                        const table = document.createElement("table");
+                        table.className = "support_status_table";
+                        
+                        let volunteerDisplay = '';
+                        if (request.volunteerName && request.volunteerName.trim() !== '') {
+                            volunteerDisplay = escapeHtml(request.volunteerName);
+                        } else {
+                            volunteerDisplay = `
+                                <span style="color: #e53e3e; display: block; margin-bottom: 5px;">No volunteer chosen</span>
+                                <a href="Find Volunteer.php?requestID=${encodeURIComponent(request.requestID)}&skill=${encodeURIComponent(request.preferredSkills)}" 
+                                   style="background: #28a745; color: white; padding: 5px 10px; border-radius: 4px; text-decoration: none; font-size: 13px; display: inline-block;">
+                                    Choose Volunteer
+                                </a>`;
+                        }
+
+                        let statusColor = '#4a5568';
+                        let statusBg = '#edf2f7';
+                        const rawStatus = request.requestStatus;
+                        let scheduleButtonHTML = '';
+
+                        if (rawStatus === 'Accepted' || rawStatus === 'Confirmed') {
+                            statusColor = '#38a169'; 
+                            statusBg = '#f0fff4';
+                            
+                            if (request.scheduleLink) {
+                                scheduleButtonHTML = `
+                                    <a class="schedulelink" href="${escapeHtml(request.scheduleLink)}">
+                                        <i class="fa-solid fa-calendar-days"></i>Schedule Session
+                                    </a>`;
+                            }
+                        } else if (rawStatus === 'Scheduled') {
+                            statusColor = '#805ad5'; 
+                            statusBg = '#f3e8ff';
+                        } else if (rawStatus === 'Rejected') {
+                            statusColor = '#e53e3e'; 
+                            statusBg = '#fff5f5';
+                        } else {
+                            statusColor = '#d69e2e'; 
+                            statusBg = '#fffaf0';
+                        }
+
+                        table.innerHTML = `
+                            <tbody>
+                                <tr>
+                                    <th>Selected Volunteer</th>
+                                    <td>${volunteerDisplay}</td>
+                                </tr>
+                                <tr>
+                                    <th>Preferred Skills</th>
+                                    <td>${escapeHtml(request.preferredSkills)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Assistance Required</th>
+                                    <td>${escapeHtml(request.assistanceRequired)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Preferred Date</th>
+                                    <td>${escapeHtml(request.preferredDate)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Preferred Time</th>
+                                    <td>${escapeHtml(request.preferredTime)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Support Mode</th>
+                                    <td>${escapeHtml(request.supportMode)}</td>
+                                </tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <td>
+                                        <span class="status-badge" style="color: ${statusColor}; background-color: ${statusBg}; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block;">
+                                            <i class="fa-solid fa-circle-info"></i> ${escapeHtml(rawStatus)}
+                                        </span>
+                                        ${scheduleButtonHTML}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        `;
+                        container.appendChild(table);
+                    });
+                })
+                .catch(error => {
+                    if (statusMessage) {
+                        statusMessage.style.color = "red";
+                        statusMessage.innerText = `Error: ${error.message}`;
+                    }
+                });
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.innerText = str;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

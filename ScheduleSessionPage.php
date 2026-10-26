@@ -1,47 +1,74 @@
 <?php
-// schedule_session.php (NO DATABASE VERSION)
+session_start();
+require_once 'db.php';
 
-$message = "";
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Just grab the data to show it works
-    $date = $_POST['date'];
-    $time = $_POST['time'];
-    
-    // Simulate success without DB
-    $message = "Success! (Simulated) Session scheduled for $date at $time.";
+if (!isset($_SESSION['studentID'])) {
+    header("Location: LoginPage.html");
+    exit;
 }
-?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Schedule Session</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $requestID = $_POST['requestID'] ?? '';
+    $sessionDate = trim($_POST['session_date'] ?? '');
+    $sessionTime = trim($_POST['session_time'] ?? '');
+    $supportMode = trim($_POST['support_mode'] ?? '');
 
-<div class="container">
-    <h2>Schedule Session</h2>
-    
-    <?php if($message): ?>
-        <p style="text-align:center; color: green; font-weight: bold; background: #e8f5e9; padding: 10px; border-radius: 5px;">
-            <?php echo $message; ?>
-        </p>
-    <?php endif; ?>
+    if (empty($requestID) || empty($sessionDate) || empty($sessionTime) || empty($supportMode)) {
+        $message = "Please fill in all fields.";
+        $messageType = "error";
+    } else {
+        $checkStmt = $conn->prepare("SELECT requestID, requestStatus, requestDesc, studentID FROM SUPPORTREQUEST WHERE requestID = ?");
+        $checkStmt->bind_param("s", $requestID);
+        $checkStmt->execute();
+        $reqResult = $checkStmt->get_result();
+        $request = $reqResult->fetch_assoc();
+        $checkStmt->close();
 
-    <form method="POST" action="">
-        <label for="date">Date:</label>
-        <input type="date" id="date" name="date" required>
+        if (!$request) {
+            $message = "Request not found.";
+            $messageType = "error";
+        } elseif ($request['requestStatus'] !== 'Accepted' && $request['requestStatus'] !== 'Confirmed') {
+            $message = "This request has not been accepted yet.";
+            $messageType = "error";
+        } elseif (strtotime($sessionDate . ' ' . $sessionTime) <= time()) {
+            $message = "Please select a future date and time.";
+            $messageType = "error";
+        } else {
+            $slotCheck = $conn->prepare("SELECT sessionID FROM SESSION WHERE requestID = ? AND date = ?");
+            $dateTime = $sessionDate . ' ' . $sessionTime . ':00';
+            $slotCheck->bind_param("ss", $requestID, $dateTime);
+            $slotCheck->execute();
+            $slotResult = $slotCheck->get_result();
+            $slotTaken = $slotResult->num_rows > 0;
+            $slotCheck->close();
 
-        <label for="time">Time:</label>
-        <input type="time" id="time" name="time" required>
+            if ($slotTaken) {
+                $message = "This slot is already taken. Please choose another time.";
+                $messageType = "error";
+            } else {
+                $sessionID = 'SES-' . uniqid();
+                $insertStmt = $conn->prepare("INSERT INTO SESSION (sessionID, requestID, date, status, studentID) VALUES (?, ?, ?, 'Scheduled', ?)");
+                $insertStmt->bind_param("ssss", $sessionID, $requestID, $dateTime, $request['studentID']);
+                
+                if ($insertStmt->execute()) {
+                    $insertStmt->close();
+                    $updateStmt = $conn->prepare("UPDATE SUPPORTREQUEST SET requestStatus = 'Scheduled' WHERE requestID = ?");
+                    $updateStmt->bind_param("s", $requestID);
+                    $updateStmt->execute();
+                    $updateStmt->close();
 
-        <button type="submit" class="btn-primary">Schedule</button>
-        <a href="feedback.php" class="btn-secondary">Go to Feedback</a>
-    </form>
+                    $message = "Session scheduled successfully for " . htmlspecialchars($sessionDate . ' ' . $sessionTime) . " (" . htmlspecialchars($supportMode) . ").";
+                    $messageType = "success";
+                } else {
+                    $insertStmt->close();
+                    $message = "Failed to schedule session. Please try again.";
+                    $messageType = "error";
+                }
+            }
+        }
+    }
+}
+
 </div>
-
 </body>
 </html>
