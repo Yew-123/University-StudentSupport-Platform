@@ -7,8 +7,16 @@ if (!isset($_SESSION['studentID'])) {
     exit;
 }
 
+// Initialize variables to prevent "Undefined variable" warnings
+$message = '';
+$messageType = '';
+$requestInfo = null;
+$volunteerInfo = null;
+$existingSession = null;
+
+$requestID = $_GET['requestID'] ?? $_POST['requestID'] ?? '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $requestID = $_POST['requestID'] ?? '';
     $sessionDate = trim($_POST['session_date'] ?? '');
     $sessionTime = trim($_POST['session_time'] ?? '');
     $supportMode = trim($_POST['support_mode'] ?? '');
