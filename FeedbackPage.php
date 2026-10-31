@@ -15,7 +15,6 @@ $messageType = '';
 $sessionInfo = null;
 
 if (!empty($sessionID)) {
-    // NOTE: no FEEDBACK join here — we derive volunteerID from requestDesc
     $stmt = $conn->prepare("
         SELECT s.sessionID, s.status AS sessionStatus, s.requestID,
                sr.requestDesc,
@@ -51,9 +50,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $message = "Please provide a valid rating between 1 and 5.";
         $messageType = 'error';
     } else {
-        // Duplicate check — FEEDBACK has no studentID column, so we rely on
-        // the fact that only this student's session can produce this sessionID.
-        // (sessionID FK on FEEDBACK already ties it to one row per session.)
         $dupCheck = $conn->prepare("SELECT feedbackID FROM FEEDBACK WHERE sessionID = ?");
         $dupCheck->bind_param("s", $sessionID);
         $dupCheck->execute();
