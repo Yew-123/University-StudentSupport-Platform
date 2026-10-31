@@ -28,6 +28,18 @@ if (isset($_GET['action']) && isset($_GET['requestID'])) {
         $updateStmt->bind_param("s", $requestID);
         $updateStmt->execute();
         $updateStmt->close();
+    
+    } elseif ($action === 'complete') {
+        // Session will will be makred as completed, same for the request status
+        $updateSessionStmt = $conn->prepare("UPDATE SESSION SET status = 'Completed' WHERE requestID = ?");
+        $updateSessionStmt->bind_param("s", $requestID);
+        $updateSessionStmt->execute();
+        $updateSessionStmt->close();
+
+        $updateReqStmt = $conn->prepare("UPDATE SUPPORTREQUEST SET requestStatus = 'Completed' WHERE requestID = ?");
+        $updateReqStmt->bind_param("s", $requestID);
+        $updateReqStmt->execute();
+        $updateReqStmt->close();
     }
 
     header("Location: Volunteer Support Session Requests.php");
@@ -88,11 +100,13 @@ if ($result->num_rows > 0) {
         } elseif ($rawStatus === 'Rejected') {
             $statusColor = '#e53e3e'; // Red
             $statusBg = '#fff5f5';
+         } elseif ($rawStatus === 'Completed') {
+            $statusColor = '#0bcce6'; // Cyan for completed, to avoid using same colour
+            $statusBg = '#ebf8ff';
         } else {
             $statusColor = '#2b6cb0'; // Default Blue / Pending
             $statusBg = '#ebf8ff';
         }
-
         // Conditionally show buttons based on status
         $actionButtonsHTML = '';
         if ($rawStatus === 'Pending') {
@@ -107,6 +121,15 @@ if ($result->num_rows > 0) {
                     <a href="Schedule Session.php?requestID=' . $reqID . '&from=volunteer" 
                        style="background: #3182ce; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; display: inline-block;">
                         <i class="fa-solid fa-calendar-days"></i> Schedule Session
+                    </a>
+                </td>';
+        } elseif ($rawStatus === 'Scheduled') {
+            $actionButtonsHTML = '
+                <td style="text-align: center;">
+                    <a href="Volunteer Support Session Requests.php?action=complete&requestID=' . $reqID . '" 
+                       onclick="return confirm(\'Confirmation to mark this session as completed? The student will be notified and able to leave a review.\');"
+                       style="background: #38a169; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; display: inline-block;">
+                        <i class="fa-solid fa-circle-check"></i> Mark Session as Completed
                     </a>
                 </td>';
         } else {
