@@ -27,6 +27,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['email'] = $user['email'];
                     $_SESSION['role'] = 'student'; // Set role so dashboard check passes
 
+                    // Checks for any pending feedback yet to submit
+                    $_SESSION['pending_feedback_count'] = 0;
+                    $_SESSION['pending_feedback_session'] = '';
+                    $fbCheck = $conn->prepare("
+                        SELECT s.sessionID
+                        FROM SESSION s
+                        JOIN SUPPORTREQUEST sr ON s.requestID = sr.requestID
+                        LEFT JOIN FEEDBACK f ON f.sessionID = s.sessionID AND f.studentID = s.studentID
+                        WHERE s.studentID = ? AND s.status = 'Completed' AND f.feedbackID IS NULL
+                        ORDER BY s.date DESC LIMIT 1
+                    ");
+                    // If found, flag it so the popout feedback form can show
+                    if ($fbCheck) {
+                        $fbCheck->bind_param("s", $user['studentID']);
+                        $fbCheck->execute();
+                        $fbRes = $fbCheck->get_result();
+                        if ($fbRow = $fbRes->fetch_assoc()) {
+                            $_SESSION['pending_feedback_session'] = $fbRow['sessionID'];
+                            $_SESSION['pending_feedback_count'] = 1;
+                        }
+                        $fbCheck->close();
+                    }
                     // Redirect to the role selection page
                     header("Location: Choose Role.html");
                     exit;
