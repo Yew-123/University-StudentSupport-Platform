@@ -102,14 +102,34 @@ if ($stmt = $conn->prepare($requestSql)) {
 $htmlFile = 'Student Dashboard.html';
 if (file_exists($htmlFile)) {
     $html = file_get_contents($htmlFile);
-    
+
+    // Feedback form popup
+    $feedbackPopup = '';
+    if (!empty($_SESSION['pending_feedback_session'])) {
+        $fbSession = htmlspecialchars($_SESSION['pending_feedback_session']);
+        $feedbackPopup = '
+        <div id="autoFeedbackModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:9999;">
+            <div style="background:#fff; padding:30px; border-radius:12px; max-width:400px; width:90%; box-shadow:0 10px 30px rgba(0,0,0,0.2); text-align:center;">
+                <i class="fa-solid fa-star" style="color:#f6c343; font-size:40px; margin-bottom:15px;"></i>
+                <h2 style="margin-bottom:10px;">Session Completed!</h2>
+                <p style="color:#555; margin-bottom:20px;">Your volunteer has marked the session as completed. Please take a moment to rate your experience.</p>
+                <a href="FeedbackPage.php?session_id=' . urlencode($fbSession) . '" style="display:block; background:#2F6FB2; color:#fff; padding:12px; border-radius:8px; text-decoration:none; margin-bottom:10px;">Leave Feedback Now</a>
+                <button type="button" onclick="document.getElementById(\'autoFeedbackModal\').style.display=\'none\';" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; background:#fff; cursor:pointer;">Later</button>
+            </div>
+        </div>';
+        // Shows once per login
+        unset($_SESSION['pending_feedback_session']);
+        unset($_SESSION['pending_feedback_count']);
+    }
+
     $placeholders = [
         '{{studentName}}'   => htmlspecialchars($studentName),
         '{{pendingCount}}'  => $pendingCount,
         '{{acceptedCount}}' => $acceptedCount,
-        '{{requestRows}}'   => $requestRows
+        '{{requestRows}}'   => $requestRows,
+        '{{feedbackPopup}}' => $feedbackPopup
     ];
-    
+
     echo str_replace(array_keys($placeholders), array_values($placeholders), $html);
 } else {
     echo "Error: Template file '$htmlFile' not found.";
