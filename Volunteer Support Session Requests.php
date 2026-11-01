@@ -48,10 +48,11 @@ if (isset($_GET['action']) && isset($_GET['requestID'])) {
 
 // Fetch sessions assigned to this volunteer securely using wildcard matching
 $sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, 
-               s.skillName, st.Name AS studentName, st.Email AS studentEmail, st.phoneNo AS studentPhone
+               s.skillName, st.Name AS studentName, st.Email AS studentEmail, st.phoneNo AS studentPhone, ses.date AS scheduledDate
         FROM SUPPORTREQUEST sr
         JOIN SKILLS s ON sr.skillID = s.skillID
         JOIN STUDENT st ON sr.studentID = st.studentID
+        LEFT JOIN SESSION ses ON sr.requestID = ses.requestID
         WHERE sr.requestDesc LIKE ? AND sr.requestStatus != 'Completed'
         ORDER BY sr.created_at DESC";
 
@@ -72,7 +73,9 @@ if ($result->num_rows > 0) {
         $studentPhone = htmlspecialchars($req['studentPhone'], ENT_QUOTES);
         $supportMode = htmlspecialchars($req['supportMode'], ENT_QUOTES);
         $createdAt = htmlspecialchars($req['created_at'], ENT_QUOTES);
-        
+        $scheduledDateRaw = $req['scheduledDate'] ?? '';
+        $scheduledDate = $scheduledDateRaw ? date('Y-m-d H:i', strtotime($scheduledDateRaw)) : 'Not scheduled yet';
+
         // Extract Assistance Required text from requestDesc safely
         $assistanceRequired = 'Not Specified';
         if (!empty($req['requestDesc'])) {
@@ -149,6 +152,10 @@ if ($result->num_rows > 0) {
                     <tr><th>Phone No</th><td>' . $studentPhone . '</td></tr>
                     <tr><th>Support Mode</th><td>' . $supportMode . '</td></tr>
                     <tr><th>Date Requested</th><td>' . $createdAt . '</td></tr>
+                    <tr>
+                        <th>Scheduled Date & Time</th>
+                        <td style="padding: 12px 15px; border-bottom: 1px solid #edf2f7; color: #2F6FB2; font-weight: bold;">' . $scheduledDate . '</td>
+                    </tr>
                     <tr>
                         <th>Status</th>
                         <td>
