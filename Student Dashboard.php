@@ -81,6 +81,8 @@ if ($stmt = $conn->prepare($requestSql)) {
                 $statusColor = '#805ad5'; // Purple for Scheduled
             } elseif ($rawStatus === 'Rejected') {
                 $statusColor = '#e53e3e'; // Red for Rejected
+             } elseif ($rawStatus === 'Completed') {
+                $statusColor = '#0bcce6'; // Cyan for Completed 
             }
 
             $requestRows .= '<tr>'
