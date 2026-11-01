@@ -52,7 +52,7 @@ $sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr
         FROM SUPPORTREQUEST sr
         JOIN SKILLS s ON sr.skillID = s.skillID
         JOIN STUDENT st ON sr.studentID = st.studentID
-        WHERE sr.requestDesc LIKE ?
+        WHERE sr.requestDesc LIKE ? AND sr.requestStatus != 'Completed'
         ORDER BY sr.created_at DESC";
 
 $stmt = $conn->prepare($sql);
