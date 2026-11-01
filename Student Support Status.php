@@ -25,9 +25,10 @@ if (!isset($conn) || $conn->connect_error) {
 
 if ($status === 'All' || empty($status)) {
     $sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, 
-                   s.skillName AS preferredSkills 
+                   s.skillName AS preferredSkills, ses.date AS scheduledDate
             FROM SUPPORTREQUEST sr
             LEFT JOIN SKILLS s ON sr.skillID = s.skillID
+            LEFT JOIN SESSION ses ON sr.requestID = ses.requestID
             WHERE sr.studentID = ? AND sr.requestStatus != 'Completed'
             ORDER BY sr.created_at DESC";
     $stmt = $conn->prepare($sql);
@@ -36,9 +37,10 @@ if ($status === 'All' || empty($status)) {
     }
 } else {
     $sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, 
-                   s.skillName AS preferredSkills 
+                   s.skillName AS preferredSkills, ses.date AS scheduledDate
             FROM SUPPORTREQUEST sr
             LEFT JOIN SKILLS s ON sr.skillID = s.skillID
+            LEFT JOIN SESSION ses ON sr.requestID = ses.requestID
             WHERE sr.studentID = ? AND sr.requestStatus = ? AND sr.requestStatus != 'Completed'
             ORDER BY sr.created_at DESC";
     $stmt = $conn->prepare($sql);
@@ -63,6 +65,7 @@ foreach ($rows as &$row) {
     $preferredTime = 'Not Specified';
     $assistanceRequired = 'Not Specified';
     $row['preferredSkills'] = $row['preferredSkills'] ?? 'Not Specified';
+    $row['scheduledDate'] = $row['scheduledDate'] ? date('Y-m-d H:i', strtotime($row['scheduledDate'])) : 'Not scheduled yet';
 
     if (!empty($row['requestDesc'])) {
         // Extract Assistance text if formatted with prefix
