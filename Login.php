@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         SELECT s.sessionID
                         FROM SESSION s
                         JOIN SUPPORTREQUEST sr ON s.requestID = sr.requestID
-                        LEFT JOIN FEEDBACK f ON f.sessionID = s.sessionID AND f.studentID = s.studentID
+                        LEFT JOIN FEEDBACK f ON f.sessionID = s.sessionID
                         WHERE s.studentID = ? AND s.status = 'Completed' AND f.feedbackID IS NULL
                         ORDER BY s.date DESC LIMIT 1
                     ");
