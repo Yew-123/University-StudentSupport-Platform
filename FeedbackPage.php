@@ -62,7 +62,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $messageType = 'error';
         } else {
             $feedbackID = 'FB-' . uniqid();
-            // Only the columns that actually exist: feedbackID, sessionID, rating, comment
             $insertStmt = $conn->prepare("INSERT INTO FEEDBACK (feedbackID, sessionID, rating, comment) VALUES (?, ?, ?, ?)");
             if (!$insertStmt) {
                 $message = "Insert prepare failed: " . $conn->error;
@@ -70,8 +69,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             } else {
                 $insertStmt->bind_param("ssis", $feedbackID, $sessionID, $rating, $comments);
                 if ($insertStmt->execute()) {
-                    $message = "Thank you! Your rating of $rating stars has been saved.";
-                    $messageType = 'success';
+                    echo "<script>alert('Thank you! Your feedback has been submitted.'); window.location.href='Student Dashboard.php';</script>";
+                    exit;
                 } else {
                     $message = "Failed to save feedback. Please try again.";
                     $messageType = 'error';
@@ -127,7 +126,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <textarea id="comments" name="comments" placeholder="Tell us more about your session..."></textarea>
 
             <button type="submit" class="btn-primary">Submit Feedback</button>
-            <a href="Student Dashboard.php" class="btn-secondary">Back</a>
         </form>
     <?php endif; ?>
 </div>
