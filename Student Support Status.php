@@ -28,7 +28,7 @@ if ($status === 'All' || empty($status)) {
                    s.skillName AS preferredSkills 
             FROM SUPPORTREQUEST sr
             LEFT JOIN SKILLS s ON sr.skillID = s.skillID
-            WHERE sr.studentID = ?
+            WHERE sr.studentID = ? AND sr.requestStatus != 'Completed'
             ORDER BY sr.created_at DESC";
     $stmt = $conn->prepare($sql);
     if ($stmt) {
@@ -39,7 +39,7 @@ if ($status === 'All' || empty($status)) {
                    s.skillName AS preferredSkills 
             FROM SUPPORTREQUEST sr
             LEFT JOIN SKILLS s ON sr.skillID = s.skillID
-            WHERE sr.studentID = ? AND sr.requestStatus = ?
+            WHERE sr.studentID = ? AND sr.requestStatus = ? AND sr.requestStatus != 'Completed'
             ORDER BY sr.created_at DESC";
     $stmt = $conn->prepare($sql);
     if ($stmt) {
