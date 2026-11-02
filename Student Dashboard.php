@@ -98,16 +98,46 @@ if ($stmt = $conn->prepare($requestSql)) {
     $stmt->close();
 }
 
-// 3. Load HTML template and inject variables
+// 3. Check for login notification popup (once per login session) if status changed
+$studentAlert = '';
+if (!isset($_SESSION['student_alert_shown'])) {
+    if ($notifStmt = $conn->prepare("SELECT COUNT(*) AS total FROM SUPPORTREQUEST WHERE studentID = ? AND requestStatus IN ('Accepted', 'Rejected', 'Scheduled')")) {
+        $notifStmt->bind_param("s", $id);
+        $notifStmt->execute();
+        $res = $notifStmt->get_result()->fetch_assoc();
+        if (($res['total'] ?? 0) > 0) {
+            $studentAlert = '
+            <div id="studentAlertOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+                <div style="background: white; padding: 30px; border-radius: 8px; text-align: center; max-width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <i class="fa-solid fa-circle-check" style="font-size: 40px; color: #38a169; margin-bottom: 15px;"></i>
+                    <h2>Request Status Update</h2>
+                    <p style="margin: 15px 0; color: #4a5568;">Some of your support requests have been updated (Accepted, Rejected, or Scheduled)!</p>
+                    <button type="button" onclick="closeStudentAlert()" style="background: #38a169; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">View Status</button>
+                </div>
+            </div>
+            <script>
+                function closeStudentAlert() {
+                    document.getElementById("studentAlertOverlay").style.display = "none";
+                    window.location.href = "Student Support Status.html";
+                }
+            </script>';
+            $_SESSION['student_alert_shown'] = true;
+        }
+        $notifStmt->close();
+    }
+}
+
+// 4. Load HTML template and inject variables
 $htmlFile = 'Student Dashboard.html';
 if (file_exists($htmlFile)) {
     $html = file_get_contents($htmlFile);
     
     $placeholders = [
-        '{{studentName}}'   => htmlspecialchars($studentName),
-        '{{pendingCount}}'  => $pendingCount,
-        '{{acceptedCount}}' => $acceptedCount,
-        '{{requestRows}}'   => $requestRows
+        '{{studentName}}'    => htmlspecialchars($studentName),
+        '{{pendingCount}}'   => $pendingCount,
+        '{{acceptedCount}}'  => $acceptedCount,
+        '{{requestRows}}'    => $requestRows,
+        '{{studentAlert}}'   => $studentAlert
     ];
     
     echo str_replace(array_keys($placeholders), array_values($placeholders), $html);
