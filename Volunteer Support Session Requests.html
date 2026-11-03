@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <title>Current Support Status</title>
+</head>
+<body>
+    <main class="support_session_requests">
+         <header>
+            <button type="button" onclick="window.location.href='Volunteer Dashboard.php'" class="backbutton">
+                <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+            </button>
+            <h1>Support Session Requests</h1>
+         </header>   
+
+         <!-- Assigned Support Sessions List -->
+         {{assignedRequestsHTML}}
+    </main>
+</body>
+</html>
