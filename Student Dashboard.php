@@ -81,6 +81,8 @@ if ($stmt = $conn->prepare($requestSql)) {
                 $statusColor = '#805ad5'; // Purple for Scheduled
             } elseif ($rawStatus === 'Rejected') {
                 $statusColor = '#e53e3e'; // Red for Rejected
+             } elseif ($rawStatus === 'Completed') {
+                $statusColor = '#0bcce6'; // Cyan for Completed 
             }
 
             $requestRows .= '<tr>'
@@ -98,48 +100,38 @@ if ($stmt = $conn->prepare($requestSql)) {
     $stmt->close();
 }
 
-// 3. Check for login notification popup (once per login session) if status changed
-$studentAlert = '';
-if (!isset($_SESSION['student_alert_shown'])) {
-    if ($notifStmt = $conn->prepare("SELECT COUNT(*) AS total FROM SUPPORTREQUEST WHERE studentID = ? AND requestStatus IN ('Accepted', 'Rejected', 'Scheduled')")) {
-        $notifStmt->bind_param("s", $id);
-        $notifStmt->execute();
-        $res = $notifStmt->get_result()->fetch_assoc();
-        if (($res['total'] ?? 0) > 0) {
-            $studentAlert = '
-            <div id="studentAlertOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
-                <div style="background: white; padding: 30px; border-radius: 8px; text-align: center; max-width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <i class="fa-solid fa-circle-check" style="font-size: 40px; color: #38a169; margin-bottom: 15px;"></i>
-                    <h2>Request Status Update</h2>
-                    <p style="margin: 15px 0; color: #4a5568;">Some of your support requests have been updated (Accepted, Rejected, or Scheduled)!</p>
-                    <button type="button" onclick="closeStudentAlert()" style="background: #38a169; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">View Status</button>
-                </div>
-            </div>
-            <script>
-                function closeStudentAlert() {
-                    document.getElementById("studentAlertOverlay").style.display = "none";
-                    window.location.href = "Student Support Status.html";
-                }
-            </script>';
-            $_SESSION['student_alert_shown'] = true;
-        }
-        $notifStmt->close();
-    }
-}
-
-// 4. Load HTML template and inject variables
+// 3. Load HTML template and inject variables
 $htmlFile = 'Student Dashboard.html';
 if (file_exists($htmlFile)) {
     $html = file_get_contents($htmlFile);
-    
+
+    // Feedback form popup
+    $feedbackPopup = '';
+    if (!empty($_SESSION['pending_feedback_session'])) {
+        $fbSession = htmlspecialchars($_SESSION['pending_feedback_session']);
+        $feedbackPopup = '
+        <div id="autoFeedbackModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:9999;">
+            <div style="background:#fff; padding:30px; border-radius:12px; max-width:400px; width:90%; box-shadow:0 10px 30px rgba(0,0,0,0.2); text-align:center;">
+                <i class="fa-solid fa-star" style="color:#f6c343; font-size:40px; margin-bottom:15px;"></i>
+                <h2 style="margin-bottom:10px;">Session Completed!</h2>
+                <p style="color:#555; margin-bottom:20px;">Your volunteer has marked the session as completed. Please take a moment to rate your experience.</p>
+                <a href="FeedbackPage.php?session_id=' . urlencode($fbSession) . '" style="display:block; background:#2F6FB2; color:#fff; padding:12px; border-radius:8px; text-decoration:none; margin-bottom:10px;">Leave Feedback Now</a>
+                <button type="button" onclick="document.getElementById(\'autoFeedbackModal\').style.display=\'none\';" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; background:#fff; cursor:pointer;">Later</button>
+            </div>
+        </div>';
+        // Shows once per login
+        unset($_SESSION['pending_feedback_session']);
+        unset($_SESSION['pending_feedback_count']);
+    }
+
     $placeholders = [
-        '{{studentName}}'    => htmlspecialchars($studentName),
-        '{{pendingCount}}'   => $pendingCount,
-        '{{acceptedCount}}'  => $acceptedCount,
-        '{{requestRows}}'    => $requestRows,
-        '{{studentAlert}}'   => $studentAlert
+        '{{studentName}}'   => htmlspecialchars($studentName),
+        '{{pendingCount}}'  => $pendingCount,
+        '{{acceptedCount}}' => $acceptedCount,
+        '{{requestRows}}'   => $requestRows,
+        '{{feedbackPopup}}' => $feedbackPopup
     ];
-    
+
     echo str_replace(array_keys($placeholders), array_values($placeholders), $html);
 } else {
     echo "Error: Template file '$htmlFile' not found.";
