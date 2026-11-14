@@ -1,19 +1,34 @@
 <?php
-// feedback.php (NO DATABASE VERSION)
+session_start();
+require_once 'db.php';
 
 $message = "";
-$targetSessionID = $_GET['session_id'] ?? 'S12345'; 
+$messageType = "";
+$targetSessionID = $_GET['session_id'] ?? $_POST['sessionID'] ?? '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $rating = $_POST['rating'];
-    $comments = $_POST['comments'];
+    $rating = (int)($_POST['rating'] ?? 0);
+    $comments = trim($_POST['comments'] ?? '');
 
-    // Basic Validation
-    if (is_numeric($rating) && $rating >= 1 && $rating <= 5) {
-        // Simulate success without DB
-        $message = "Thank you! (Simulated) Your rating of $rating stars has been received.";
+    if ($rating >= 1 && $rating <= 5) {
+        $stmt = $conn->prepare("INSERT INTO FEEDBACK (sessionID, rating, comment) VALUES (?, ?, ?)");
+        if ($stmt) {
+            $stmt->bind_param("sis", $targetSessionID, $rating, $comments);
+            if ($stmt->execute()) {
+                $message = "Thank you! Your feedback has been recorded.";
+                $messageType = "success";
+            } else {
+                $message = "Failed to save feedback: " . $stmt->error;
+                $messageType = "error";
+            }
+            $stmt->close();
+        } else {
+            $message = "SQL prepare error: " . $conn->error;
+            $messageType = "error";
+        }
     } else {
         $message = "Please provide a valid rating between 1 and 5.";
+        $messageType = "error";
     }
 }
 ?>
