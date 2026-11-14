@@ -28,6 +28,18 @@ if (isset($_GET['action']) && isset($_GET['requestID'])) {
         $updateStmt->bind_param("s", $requestID);
         $updateStmt->execute();
         $updateStmt->close();
+    
+    } elseif ($action === 'complete') {
+        // Session will will be makred as completed, same for the request status
+        $updateSessionStmt = $conn->prepare("UPDATE SESSION SET status = 'Completed' WHERE requestID = ?");
+        $updateSessionStmt->bind_param("s", $requestID);
+        $updateSessionStmt->execute();
+        $updateSessionStmt->close();
+
+        $updateReqStmt = $conn->prepare("UPDATE SUPPORTREQUEST SET requestStatus = 'Completed' WHERE requestID = ?");
+        $updateReqStmt->bind_param("s", $requestID);
+        $updateReqStmt->execute();
+        $updateReqStmt->close();
     }
 
     header("Location: Volunteer Support Session Requests.php");
@@ -36,11 +48,12 @@ if (isset($_GET['action']) && isset($_GET['requestID'])) {
 
 // Fetch sessions assigned to this volunteer securely using wildcard matching
 $sql = "SELECT sr.requestID, sr.requestDesc, sr.created_at, sr.requestStatus, sr.supportMode, 
-               s.skillName, st.Name AS studentName, st.Email AS studentEmail, st.phoneNo AS studentPhone
+               s.skillName, st.Name AS studentName, st.Email AS studentEmail, st.phoneNo AS studentPhone, ses.date AS scheduledDate
         FROM SUPPORTREQUEST sr
         JOIN SKILLS s ON sr.skillID = s.skillID
         JOIN STUDENT st ON sr.studentID = st.studentID
-        WHERE sr.requestDesc LIKE ?
+        LEFT JOIN SESSION ses ON sr.requestID = ses.requestID
+        WHERE sr.requestDesc LIKE ? AND sr.requestStatus != 'Completed'
         ORDER BY sr.created_at DESC";
 
 $stmt = $conn->prepare($sql);
@@ -60,7 +73,9 @@ if ($result->num_rows > 0) {
         $studentPhone = htmlspecialchars($req['studentPhone'], ENT_QUOTES);
         $supportMode = htmlspecialchars($req['supportMode'], ENT_QUOTES);
         $createdAt = htmlspecialchars($req['created_at'], ENT_QUOTES);
-        
+        $scheduledDateRaw = $req['scheduledDate'] ?? '';
+        $scheduledDate = $scheduledDateRaw ? date('Y-m-d H:i', strtotime($scheduledDateRaw)) : 'Not scheduled yet';
+
         // Extract Assistance Required text from requestDesc safely
         $assistanceRequired = 'Not Specified';
         if (!empty($req['requestDesc'])) {
@@ -88,11 +103,13 @@ if ($result->num_rows > 0) {
         } elseif ($rawStatus === 'Rejected') {
             $statusColor = '#e53e3e'; // Red
             $statusBg = '#fff5f5';
+         } elseif ($rawStatus === 'Completed') {
+            $statusColor = '#0bcce6'; // Cyan for completed, to avoid using same colour
+            $statusBg = '#ebf8ff';
         } else {
             $statusColor = '#2b6cb0'; // Default Blue / Pending
             $statusBg = '#ebf8ff';
         }
-
         // Conditionally show buttons based on status
         $actionButtonsHTML = '';
         if ($rawStatus === 'Pending') {
@@ -107,6 +124,15 @@ if ($result->num_rows > 0) {
                     <a href="Schedule Session.php?requestID=' . $reqID . '&from=volunteer" 
                        style="background: #3182ce; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; display: inline-block;">
                         <i class="fa-solid fa-calendar-days"></i> Schedule Session
+                    </a>
+                </td>';
+        } elseif ($rawStatus === 'Scheduled') {
+            $actionButtonsHTML = '
+                <td style="text-align: center;">
+                    <a href="Volunteer Support Session Requests.php?action=complete&requestID=' . $reqID . '" 
+                       onclick="return confirm(\'Confirmation to mark this session as completed? The student will be notified and able to leave a review.\');"
+                       style="background: #38a169; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; display: inline-block;">
+                        <i class="fa-solid fa-circle-check"></i> Mark Session as Completed
                     </a>
                 </td>';
         } else {
@@ -126,6 +152,10 @@ if ($result->num_rows > 0) {
                     <tr><th>Phone No</th><td>' . $studentPhone . '</td></tr>
                     <tr><th>Support Mode</th><td>' . $supportMode . '</td></tr>
                     <tr><th>Date Requested</th><td>' . $createdAt . '</td></tr>
+                    <tr>
+                        <th>Scheduled Date & Time</th>
+                        <td style="padding: 12px 15px; border-bottom: 1px solid #edf2f7; color: #2F6FB2; font-weight: bold;">' . $scheduledDate . '</td>
+                    </tr>
                     <tr>
                         <th>Status</th>
                         <td>
