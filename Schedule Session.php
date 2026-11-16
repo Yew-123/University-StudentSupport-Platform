@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = "This slot is already taken. Please choose another time.";
                 $messageType = "error";
             } else {
-                $sessionID = 'SES-' . uniqid();
+                $sessionID = 'SES' . strtoupper(bin2hex(random_bytes(4)));
                 $insertStmt = $conn->prepare("INSERT INTO SESSION (sessionID, requestID, date, status, studentID) VALUES (?, ?, ?, 'Scheduled', ?)");
                 $insertStmt->bind_param("ssss", $sessionID, $requestID, $dateTime, $request['studentID']);
                 

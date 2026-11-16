@@ -12,7 +12,7 @@ $id = $_SESSION['studentID'];
 $volunteerName = $_SESSION['name'] ?? 'Volunteer';
 $searchTerm = '%' . $id . '%';
 
-// 1. Fetch Request Counts accurately for Pending and Accepted
+//Fetch Request Counts accurately for Pending and Accepted
 $pendingCount = 0;
 $acceptedCount = 0;
 
@@ -32,7 +32,7 @@ if ($stmt = $conn->prepare("SELECT COUNT(*) AS a FROM SUPPORTREQUEST WHERE reque
     $stmt->close();
 }
 
-// 2. Fetch Recent Assigned Sessions for the Dashboard Table
+//Fetch Recent Assigned Sessions for the Dashboard Table
 $requestRows = '';
 $sql = "SELECT sr.requestDesc, sr.requestStatus, sr.supportMode, sr.created_at, sk.skillName, st.Name AS studentName 
         FROM SUPPORTREQUEST sr 
@@ -83,6 +83,8 @@ if ($stmt = $conn->prepare($sql)) {
                 $statusColor = '#805ad5'; // Purple for Scheduled
             } elseif ($rawStatus === 'Rejected') {
                 $statusColor = '#e53e3e'; // Red for Rejected
+             } elseif ($rawStatus === 'Completed') {
+                $statusColor = '#0bcce6'; // Cyan for Completed 
             }
             
             $requestRows .= '<tr>'
@@ -100,7 +102,6 @@ if ($stmt = $conn->prepare($sql)) {
     $stmt->close();
 }
 
-// 3. Check for login notification popup (once per login session) if pending requests exist
 $volunteerAlert = '';
 if (!isset($_SESSION['volunteer_alert_shown'])) {
     if ($notifStmt = $conn->prepare("SELECT COUNT(*) AS total FROM SUPPORTREQUEST WHERE requestDesc LIKE ? AND requestStatus = 'Pending'")) {
@@ -129,16 +130,16 @@ if (!isset($_SESSION['volunteer_alert_shown'])) {
     }
 }
 
-// 4. Load Volunteer HTML template and inject variables
+//Load Volunteer HTML template and inject variables
 $htmlFile = 'Volunteer Dashboard.html';
 if (file_exists($htmlFile)) {
     $html = file_get_contents($htmlFile);
     
     $placeholders = [
-        '{{studentName}}'    => htmlspecialchars($volunteerName),
-        '{{pendingCount}}'   => $pendingCount,
-        '{{acceptedCount}}'  => $acceptedCount,
-        '{{requestRows}}'    => $requestRows,
+        '{{studentName}}'   => htmlspecialchars($volunteerName),
+        '{{pendingCount}}'  => $pendingCount,
+        '{{acceptedCount}}' => $acceptedCount,
+        '{{requestRows}}'   => $requestRows,
         '{{volunteerAlert}}' => $volunteerAlert
     ];
     

@@ -29,17 +29,39 @@ if (isset($_GET['action']) && isset($_GET['requestID'])) {
         $updateStmt->execute();
         $updateStmt->close();
     
-    } elseif ($action === 'complete') {
-        // Session will will be makred as completed, same for the request status
-        $updateSessionStmt = $conn->prepare("UPDATE SESSION SET status = 'Completed' WHERE requestID = ?");
-        $updateSessionStmt->bind_param("s", $requestID);
-        $updateSessionStmt->execute();
-        $updateSessionStmt->close();
+        } elseif ($action === 'complete') {
+        $reqLookup = $conn->prepare("SELECT studentID FROM SUPPORTREQUEST WHERE requestID = ?");
+        $reqLookup->bind_param("s", $requestID);
+        $reqLookup->execute();
+        $reqData = $reqLookup->get_result()->fetch_assoc();
+        $reqLookup->close();
 
-        $updateReqStmt = $conn->prepare("UPDATE SUPPORTREQUEST SET requestStatus = 'Completed' WHERE requestID = ?");
-        $updateReqStmt->bind_param("s", $requestID);
-        $updateReqStmt->execute();
-        $updateReqStmt->close();
+        if ($reqData) {
+            $reqStudentID = $reqData['studentID'];
+            $sesCheck = $conn->prepare("SELECT sessionID FROM SESSION WHERE requestID = ?");
+            $sesCheck->bind_param("s", $requestID);
+            $sesCheck->execute();
+            $hasSession = $sesCheck->get_result()->num_rows > 0;
+            $sesCheck->close();
+
+            if ($hasSession) {
+                $u = $conn->prepare("UPDATE SESSION SET status = 'Completed' WHERE requestID = ?");
+                $u->bind_param("s", $requestID);
+                $u->execute();
+                $u->close();
+            } else {
+                $newSessionID = 'SES' . strtoupper(bin2hex(random_bytes(4)));
+                $i = $conn->prepare("INSERT INTO SESSION (sessionID, requestID, date, status, studentID) VALUES (?, ?, NOW(), 'Completed', ?)");
+                $i->bind_param("sss", $newSessionID, $requestID, $reqStudentID);
+                $i->execute();
+                $i->close();
+            }
+
+            $u2 = $conn->prepare("UPDATE SUPPORTREQUEST SET requestStatus = 'Completed' WHERE requestID = ?");
+            $u2->bind_param("s", $requestID);
+            $u2->execute();
+            $u2->close();
+        }
     }
 
     header("Location: Volunteer Support Session Requests.php");
