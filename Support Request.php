@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $prefTime = trim($_POST['preferred_time'] ?? '');
     $supportMode = trim($_POST['support_mode'] ?? 'Online');
     
-    $requestID = 'REQ-' . uniqid(); 
+    $requestID = 'REQ' . strtoupper(bin2hex(random_bytes(5)));
     // Safely combine description fields while preserving regex compatibility for date/time parsing
     $requestDesc = "Assistance: $assistance | Preferred Date: $prefDate, Time: $prefTime";
     $requestStatus = 'Pending';

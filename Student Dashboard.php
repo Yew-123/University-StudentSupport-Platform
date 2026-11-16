@@ -10,7 +10,7 @@ if (!isset($_SESSION['studentID'])) {
 $id = $_SESSION['studentID'];
 $studentName = $_SESSION['name'] ?? 'Student';
 
-// 1. Fetch Request Counts
+//Fetch Request Counts
 $pendingCount = $acceptedCount = 0;
 
 if ($stmt = $conn->prepare("SELECT COUNT(*) AS p FROM SUPPORTREQUEST WHERE studentID = ? AND requestStatus = 'Pending'")) {
@@ -29,7 +29,7 @@ if ($stmt = $conn->prepare("SELECT COUNT(*) AS a FROM SUPPORTREQUEST WHERE stude
     $stmt->close();
 }
 
-// 2. Fetch Recent Requests
+//Fetch Recent Requests
 $requestRows = '';
 $requestSql = "SELECT sr.requestDesc, sr.requestStatus, sr.supportMode, sr.created_at, sk.skillName 
                FROM SUPPORTREQUEST sr 
@@ -47,7 +47,7 @@ if ($stmt = $conn->prepare($requestSql)) {
         while ($row = $result->fetch_assoc()) {
             $rawStatus = $row['requestStatus'];
             $displayStatus = htmlspecialchars($rawStatus, ENT_QUOTES);
-            
+
             // Extract Assistance Description and Preferred Date/Time cleanly
             $assistanceRequired = 'Not Specified';
             $preferredDate = '';
@@ -71,7 +71,9 @@ if ($stmt = $conn->prepare($requestSql)) {
                 }
             }
 
-            $prefDateTimeDisplay = ($preferredDate && $preferredTime) ? $preferredDate . ' ' . $preferredTime : ($preferredDate ?: 'Not Specified');
+            $prefDateTimeDisplay = ($preferredDate && $preferredTime)
+                ? $preferredDate . ' ' . $preferredTime
+                : ($preferredDate ?: 'Not Specified');
 
             // Dynamic color coding based on status
             $statusColor = '#d69e2e'; // Warm Amber for Pending
@@ -81,6 +83,8 @@ if ($stmt = $conn->prepare($requestSql)) {
                 $statusColor = '#805ad5'; // Purple for Scheduled
             } elseif ($rawStatus === 'Rejected') {
                 $statusColor = '#e53e3e'; // Red for Rejected
+            } elseif ($rawStatus === 'Completed') {
+                $statusColor = '#0bcce6'; // Cyan for Completed
             }
 
             $requestRows .= '<tr>'
@@ -98,7 +102,7 @@ if ($stmt = $conn->prepare($requestSql)) {
     $stmt->close();
 }
 
-// 3. Check for login notification popup (once per login session) if status changed
+//Login notification popup (once per login session) if status changed
 $studentAlert = '';
 if (!isset($_SESSION['student_alert_shown'])) {
     if ($notifStmt = $conn->prepare("SELECT COUNT(*) AS total FROM SUPPORTREQUEST WHERE studentID = ? AND requestStatus IN ('Accepted', 'Rejected', 'Scheduled')")) {
@@ -127,19 +131,58 @@ if (!isset($_SESSION['student_alert_shown'])) {
     }
 }
 
-// 4. Load HTML template and inject variables
+//Feedback popup — show once per completed session with no feedback
+$feedbackPopup = '';
+
+if (!isset($_SESSION['feedback_prompted'])) {
+    $_SESSION['feedback_prompted'] = [];
+}
+
+$fbSql = "
+    SELECT s.sessionID, s.date
+    FROM SESSION s
+    JOIN SUPPORTREQUEST sr ON s.requestID = sr.requestID
+    LEFT JOIN FEEDBACK f  ON f.sessionID = s.sessionID
+    WHERE sr.studentID = ?
+      AND s.status = 'Completed'
+      AND f.feedbackID IS NULL
+    ORDER BY s.date DESC
+    LIMIT 1
+";
+if ($fbStmt = $conn->prepare($fbSql)) {
+    $fbStmt->bind_param("s", $id);
+    $fbStmt->execute();
+    $fbRow = $fbStmt->get_result()->fetch_assoc();
+    $fbStmt->close();
+
+    if ($fbRow && !in_array($fbRow['sessionID'], $_SESSION['feedback_prompted'], true)) {
+        $feedbackPopup = '
+        <div id="autoFeedbackModal" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:9999;">
+            <div style="background:#fff; padding:30px; border-radius:12px; max-width:400px; width:90%; box-shadow:0 10px 30px rgba(0,0,0,0.2); text-align:center;">
+                <i class="fa-solid fa-star" style="color:#f6c343; font-size:40px; margin-bottom:15px;"></i>
+                <h2 style="margin-bottom:10px;">Session Completed!</h2>
+                <p style="color:#555; margin-bottom:20px;">Your volunteer has marked the session as completed. Please take a moment to rate your experience.</p>
+                <a href="FeedbackPage.php?session_id=' . urlencode($fbRow['sessionID']) . '" style="display:block; background:#2F6FB2; color:#fff; padding:12px; border-radius:8px; text-decoration:none; margin-bottom:10px;">Leave Feedback Now</a>
+                <button type="button" onclick="document.getElementById(\'autoFeedbackModal\').style.display=\'none\';" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; background:#fff; cursor:pointer;">Later</button>
+            </div>
+        </div>';
+        $_SESSION['feedback_prompted'][] = $fbRow['sessionID'];
+    }
+}
+
 $htmlFile = 'Student Dashboard.html';
 if (file_exists($htmlFile)) {
     $html = file_get_contents($htmlFile);
-    
+
     $placeholders = [
         '{{studentName}}'    => htmlspecialchars($studentName),
         '{{pendingCount}}'   => $pendingCount,
         '{{acceptedCount}}'  => $acceptedCount,
         '{{requestRows}}'    => $requestRows,
-        '{{studentAlert}}'   => $studentAlert
+        '{{studentAlert}}'   => $studentAlert,
+        '{{feedbackPopup}}'  => $feedbackPopup
     ];
-    
+
     echo str_replace(array_keys($placeholders), array_values($placeholders), $html);
 } else {
     echo "Error: Template file '$htmlFile' not found.";
